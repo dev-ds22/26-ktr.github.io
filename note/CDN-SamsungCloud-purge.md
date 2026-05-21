@@ -353,16 +353,16 @@ Samsung SDS Global CDN 설명에는 **캐시 정책, 캐시 만료 시간, TTL �
 
 ## 2. CDN 캐시가 오래 유지되지 않는 대표 이유
 
-|구분|설명|
-|---|---|
-|TTL 만료|CDN Edge의 캐시 유효 시간이 지나면 stale 상태가 됨|
-|`max-age` 없음|`Cache-Control: public`만 있고 `max-age`가 없으면 장기 캐시 보장 어려움|
-|Purge 이력|전체 purge 또는 경로 purge로 캐시가 삭제됐을 수 있음|
-|Edge별 보유 차이|서울 Edge에는 있지만 다른 Edge에는 없을 수 있음|
-|요청 빈도 낮음|자주 요청되지 않는 객체는 CDN 내부 정책상 제거될 수 있음|
-|QueryString 분리|`?ver=1.234`가 별도 객체라 특정 객체만 stale/MISS 상태일 수 있음|
-|Origin 재검증|TTL 만료 후 `If-Modified-Since`, `If-None-Match`로 Origin 확인|
-|Cache Bypass|쿠키, 헤더, CDN Rule 때문에 캐시를 우회할 수 있음|
+| 구분             | 설명                                                       |
+| -------------- | -------------------------------------------------------- |
+| TTL 만료         | CDN Edge의 캐시 유효 시간이 지나면 stale 상태가 됨                      |
+| `max-age` 없음   | `Cache-Control: public`만 있고 `max-age`가 없으면 장기 캐시 보장 어려움  |
+| Purge 이력       | 전체 purge 또는 경로 purge로 캐시가 삭제됐을 수 있음                      |
+| Edge별 보유 차이    | 서울 Edge에는 있지만 다른 Edge에는 없을 수 있음                          |
+| 요청 빈도 낮음       | 자주 요청되지 않는 객체는 CDN 내부 정책상 제거될 수 있음                       |
+| QueryString 분리 | `?ver=1.234`가 별도 객체라 특정 객체만 stale/MISS 상태일 수 있음          |
+| Origin 재검증     | TTL 만료 후 `If-Modified-Since`, `If-None-Match`로 Origin 확인 |
+| Cache Bypass   | 쿠키, 헤더, CDN Rule 때문에 캐시를 우회할 수 있음                        |
 
 ## 3. `?ver=1.234`와 CDN Cache Key 관계
 
@@ -546,25 +546,25 @@ Server-Timing
 
 판단 기준:
 
-|헤더|느린 URL에서 의심할 상태|
-|---|---|
-|`X-Cache`|`MISS`, `REFRESH_MISS`, `BYPASS`, `EXPIRED`|
-|`Age`|없음, `0`, 매번 초기화|
-|`Cache-Control`|`public`만 있고 `max-age` 없음|
-|`ETag`/`Last-Modified`|매번 재검증 발생|
-|`Vary`|과도한 분기, `Accept-Encoding` 외 불필요한 값|
-|`Content-Encoding`|느린 URL만 압축 미적용 또는 동적 압축|
-|`Content-Length`|느린 URL만 다른 파일 응답 가능|
+| 헤더                     | 느린 URL에서 의심할 상태                             |
+| ---------------------- | ------------------------------------------- |
+| `X-Cache`              | `MISS`, `REFRESH_MISS`, `BYPASS`, `EXPIRED` |
+| `Age`                  | 없음, `0`, 매번 초기화                             |
+| `Cache-Control`        | `public`만 있고 `max-age` 없음                   |
+| `ETag`/`Last-Modified` | 매번 재검증 발생                                   |
+| `Vary`                 | 과도한 분기, `Accept-Encoding` 외 불필요한 값          |
+| `Content-Encoding`     | 느린 URL만 압축 미적용 또는 동적 압축                     |
+| `Content-Length`       | 느린 URL만 다른 파일 응답 가능                         |
 
 ## 7. `Age`로 보는 캐시 상태
 
-|`Age` 상태|의미|
-|---|---|
-|`Age`가 큼|CDN 또는 공유 캐시에 오래 보관된 응답 가능성|
-|`Age: 0`|방금 Origin에서 가져왔거나 재검증된 응답 가능성|
-|`Age` 없음|캐시 미적중, bypass, CDN 헤더 비노출 가능성|
-|반복 요청마다 증가|캐시 HIT 가능성 높음|
-|반복 요청마다 0으로 초기화|매번 재검증 또는 MISS 가능성|
+| `Age` 상태        | 의미                             |
+| --------------- | ------------------------------ |
+| `Age`가 큼        | CDN 또는 공유 캐시에 오래 보관된 응답 가능성    |
+| `Age: 0`        | 방금 Origin에서 가져왔거나 재검증된 응답 가능성  |
+| `Age` 없음        | 캐시 미적중, bypass, CDN 헤더 비노출 가능성 |
+| 반복 요청마다 증가      | 캐시 HIT 가능성 높음                  |
+| 반복 요청마다 0으로 초기화 | 매번 재검증 또는 MISS 가능성             |
 
 ## 8. 왜 `?ver` 값을 바꾸면 빨라지는가?
 
