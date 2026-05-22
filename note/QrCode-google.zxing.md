@@ -6,14 +6,14 @@ ZXing은 Google에서 시작된 오픈소스 바코드/QR 코드 처리 라이�
 
 ### 2. 주요 패키지 구조
 
-|구분|패키지/클래스|설명|
-|---|---|---|
-|핵심|`com.google.zxing`|`BarcodeFormat`, `EncodeHintType`, `WriterException` 등 공통 타입|
-|QR 생성|`com.google.zxing.qrcode.QRCodeWriter`|문자열을 QR 코드용 `BitMatrix`로 변환|
-|이미지 변환|`com.google.zxing.client.j2se.MatrixToImageWriter`|`BitMatrix`를 PNG/JPG 이미지로 출력|
-|오류 보정|`com.google.zxing.qrcode.decoder.ErrorCorrectionLevel`|QR 손상 복원 수준 지정|
-|`QRCodeWriter#encode()`는 문자열, 바코드 포맷, 가로/세로 크기, 추가 힌트를 받아 `BitMatrix`를 반환합니다. 공식 Javadoc상 `contents`, `BarcodeFormat`, `width`, `height`, `hints`를 인자로 받을 수 있고, 인코딩이 불가능하면 `WriterException`이 발생합니다. ([zxing.github.io](https://zxing.github.io/zxing/apidocs/com/google/zxing/qrcode/QRCodeWriter.html "QRCodeWriter (ZXing 3.5.4 API)"))|||
+| 구분     | 패키지/클래스                                                | 설명                                                           |
+| ------ | ------------------------------------------------------ | ------------------------------------------------------------ |
+| 핵심     | `com.google.zxing`                                     | `BarcodeFormat`, `EncodeHintType`, `WriterException` 등 공통 타입 |
+| QR 생성  | `com.google.zxing.qrcode.QRCodeWriter`                 | 문자열을 QR 코드용 `BitMatrix`로 변환                                  |
+| 이미지 변환 | `com.google.zxing.client.j2se.MatrixToImageWriter`     | `BitMatrix`를 PNG/JPG 이미지로 출력                                 |
+| 오류 보정  | `com.google.zxing.qrcode.decoder.ErrorCorrectionLevel` | QR 손상 복원 수준 지정                                               |
 
+- `QRCodeWriter#encode()`는 문자열, 바코드 포맷, 가로/세로 크기, 추가 힌트를 받아 `BitMatrix`를 반환합니다. 공식 Javadoc상 `contents`, `BarcodeFormat`, `width`, `height`, `hints`를 인자로 받을 수 있고, 인코딩이 불가능하면 `WriterException`이 발생합니다. ([zxing.github.io](https://zxing.github.io/zxing/apidocs/com/google/zxing/qrcode/QRCodeWriter.html "QRCodeWriter (ZXing 3.5.4 API)"))
 ### 3. Maven 의존성
 
 ```xml
@@ -140,13 +140,14 @@ public class QrCodeController {
 
 ### 7. 오류 보정 레벨 선택 기준
 
-|레벨|복원력|데이터 밀도|실무 용도|
-|---|--:|--:|---|
-|L|낮음|낮음|화면 전용, 깨끗한 환경|
-|M|보통|보통|일반 웹/모바일 QR 기본값|
-|Q|높음|높음|인쇄물, 약간의 오염 가능성|
-|H|매우 높음|매우 높음|로고 삽입, 훼손 가능성 있는 QR|
-|주의할 점은 오류 보정 레벨을 높이면 복원력은 좋아지지만 QR 패턴이 복잡해집니다. 데이터가 긴 상태에서 `H`를 쓰면 오히려 인식이 어려워질 수 있으므로, 실무 기본값은 `M`, 로고 삽입이나 인쇄물은 `Q` 또는 `H`를 검토하는 방식이 적절합니다.||||
+| 레벨  |   복원력 | 데이터 밀도 | 실무 용도               |
+| --- | ----: | -----: | ------------------- |
+| L   |    낮음 |     낮음 | 화면 전용, 깨끗한 환경       |
+| M   |    보통 |     보통 | 일반 웹/모바일 QR 기본값     |
+| Q   |    높음 |     높음 | 인쇄물, 약간의 오염 가능성     |
+| H   | 매우 높음 |  매우 높음 | 로고 삽입, 훼손 가능성 있는 QR |
+
+- 주의할 점은 오류 보정 레벨을 높이면 복원력은 좋아지지만 QR 패턴이 복잡해집니다. 데이터가 긴 상태에서 `H`를 쓰면 오히려 인식이 어려워질 수 있으므로, 실무 기본값은 `M`, 로고 삽입이나 인쇄물은 `Q` 또는 `H`를 검토하는 방식이 적절합니다.
 
 ### 8. 실무 주의점
 
@@ -1320,3 +1321,353 @@ public ResponseEntity<byte[]> qr() {
 ### 9. 결론
 
 현재 소스는 **단순 QR Base64 생성**은 가능하지만, 로고 포함 QR은 `hintMap` 미적용, 낮은 오류 보정 레벨, 로고 크기 계산 불안정 때문에 실무 인식률 문제가 발생할 수 있습니다. 또한 QR URL 원문 로그, 문자열 기반 파일 경로 조립, 실패 반환값 혼재는 운영 보안과 장애 대응 측면에서 개선이 필요합니다. 우선은 **힌트 적용**, **오류 보정 `H`**, **입력 검증**, **URL 로그 제거**, **경로 검증**, **반환 정책 통일**부터 반영하는 것이 가장 효과적입니다.
+
+## BitMatrix, hintMap
+
+### BitMatrix와 hintMap 상세 설명
+
+#### 출력 전 신뢰성 검증 결과
+
+|검증 항목|확인 결과|
+|---|---|
+|공식 Javadoc 확인|`QRCodeWriter#encode()`는 `BitMatrix`를 반환하며, `hints` 인자를 받는 overload가 존재함을 확인했습니다. ([ZXing](https://zxing.github.io/zxing/apidocs/com/google/zxing/qrcode/QRCodeWriter.html "QRCodeWriter (ZXing 3.5.4 API)"))|
+|공식 소스 확인|`QRCodeWriter#encode(contents, format, width, height)`는 내부적으로 `encode(..., null)`을 호출합니다. 즉, 4개 인자 메서드를 쓰면 hint가 전달되지 않습니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/qrcode/QRCodeWriter.java "zxing/core/src/main/java/com/google/zxing/qrcode/QRCodeWriter.java at master · zxing/zxing · GitHub"))|
+|기본값 확인|ZXing `QRCodeWriter` 소스상 기본 오류 보정 레벨은 `L`, 기본 Quiet Zone 값은 `4`입니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/qrcode/QRCodeWriter.java "zxing/core/src/main/java/com/google/zxing/qrcode/QRCodeWriter.java at master · zxing/zxing · GitHub"))|
+|첨부 코드 확인|첨부 코드에서는 `hintMap`을 만들고 `ERROR_CORRECTION`, `QR_VERSION`을 넣었지만, 실제 `encode()` 호출에는 `hintMap`을 전달하지 않습니다. 따라서 해당 설정은 현재 코드에서 적용되지 않습니다.|
+
+### 1. BitMatrix란?
+
+`BitMatrix`는 ZXing에서 QR 코드 결과를 표현하는 **2차원 비트 행렬**입니다. 공식 Javadoc 기준으로 `BitMatrix`는 2D matrix of bits이며, 좌표는 `x, y` 순서이고 원점은 좌상단입니다. ([ZXing](https://zxing.github.io/zxing/apidocs/com/google/zxing/common/BitMatrix.html?utm_source=chatgpt.com "BitMatrix (ZXing 3.5.4 API)"))  
+쉽게 말하면 다음과 같습니다.
+
+```text
+BitMatrix = QR 코드의 검은 칸/흰 칸 정보를 가진 2차원 배열
+true  = 검은색 영역
+false = 흰색 영역
+```
+
+QR 생성 흐름에서는 보통 아래 순서로 사용됩니다.
+
+```text
+문자열 URL/토큰
+→ MultiFormatWriter 또는 QRCodeWriter
+→ BitMatrix
+→ MatrixToImageWriter
+→ PNG/JPG/BufferedImage/Base64
+```
+
+첨부 코드에서도 `MultiFormatWriter().encode(...)` 결과를 `BitMatrix`로 받은 뒤, `MatrixToImageWriter.writeToStream(...)` 또는 `MatrixToImageWriter.toBufferedImage(...)`로 이미지화하고 있습니다.
+
+### 2. BitMatrix가 실제로 하는 역할
+
+| 단계             | 역할                                                                      |
+| -------------- | ----------------------------------------------------------------------- |
+| QR 인코딩 결과 보관   | URL 문자열을 QR 패턴으로 변환한 결과를 보관                                             |
+| 검은색/흰색 정보 제공   | 각 좌표의 칸이 검정인지 흰색인지 표현                                                   |
+| 이미지 변환 전 중간 결과 | PNG, JPG, `BufferedImage`로 바꾸기 전 원본 데이터 역할                              |
+| 로고 합성 기준 이미지   | `MatrixToImageWriter.toBufferedImage(bitMatrix)`로 QR 이미지를 만든 뒤 로고 합성 가능 |
+
+- 즉, `BitMatrix` 자체는 이미지 파일이 아닙니다. 이미지 파일로 저장하거나 브라우저에 응답하려면 반드시 `MatrixToImageWriter`, `ImageIO`, 직접 픽셀 변환 등의 후처리가 필요합니다.
+### 3. 현재 코드에서 BitMatrix 사용 부분
+
+첨부 코드의 기본 QR 생성은 아래 구조입니다.
+
+```java
+BitMatrix bitMatrix = new MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, width, height);
+MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
+```
+
+로고 포함 QR 생성도 먼저 `BitMatrix`를 만들고, 이를 `BufferedImage`로 바꾼 뒤 로고를 덮어씌우는 구조입니다.
+
+```java
+BitMatrix bitMatrix = new MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, width, height);
+BufferedImage qrImage = MatrixToImageWriter.toBufferedImage(bitMatrix);
+```
+
+문제는 로고 포함 QR 코드에서 아래처럼 `hintMap`을 만들었지만 실제 QR 생성에는 사용하지 않았다는 점입니다.
+
+```java
+Hashtable<EncodeHintType, Object> hintMap = new Hashtable<>();
+hintMap.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+hintMap.put(EncodeHintType.QR_VERSION, 10);
+BitMatrix bitMatrix = new MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, width, height);
+```
+
+이 경우 `hintMap`은 메모리에만 존재하고, QR 생성 결과에는 아무 영향도 주지 않습니다.
+
+### 4. hintMap이란?
+
+`hintMap`은 ZXing 인코더에게 전달하는 **추가 생성 옵션 Map**입니다.  
+정식 타입은 보통 다음처럼 작성합니다.
+
+```java
+Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+```
+
+또는 기존 코드처럼 아래처럼 작성할 수도 있습니다.
+
+```java
+Hashtable<EncodeHintType, Object> hintMap = new Hashtable<>();
+```
+
+하지만 실무에서는 `Hashtable`보다 `EnumMap`을 권장합니다.
+
+| 구분         | Hashtable | EnumMap |
+| ---------- | --------- | ------- |
+| 사용 가능 여부   | 가능        | 가능      |
+| 동기화        | 기본 동기화    |         |
+| 키 타입       | 일반 객체     |         |
+| Enum 키 최적화 | 아님        | 예       |
+| 실무 권장      | 낮음        | 높음      |
+
+- `EncodeHintType`은 enum이므로 `EnumMap`이 의미상 더 적절합니다. 메서드 내부에서 일회성으로 만들고 바로 넘기는 설정값이라면 `Hashtable`의 동기화 장점도 거의 없습니다.
+### 5. hintMap이 적용되는 정확한 위치
+
+ZXing의 `QRCodeWriter`에는 두 가지 주요 `encode()`가 있습니다.
+
+```java
+encode(String contents, BarcodeFormat format, int width, int height)
+encode(String contents, BarcodeFormat format, int width, int height, Map<EncodeHintType, ?> hints)
+```
+
+공식 Javadoc에서도 4개 인자 버전은 기본 설정으로 인코딩하고, 5개 인자 버전은 추가 파라미터인 `hints`를 받을 수 있다고 설명합니다. ([ZXing](https://zxing.github.io/zxing/apidocs/com/google/zxing/qrcode/QRCodeWriter.html "QRCodeWriter (ZXing 3.5.4 API)"))  
+따라서 hint를 적용하려면 반드시 아래처럼 호출해야 합니다.
+
+```java
+BitMatrix bitMatrix = new MultiFormatWriter().encode(
+        url,
+        BarcodeFormat.QR_CODE,
+        width,
+        height,
+        hints
+);
+```
+
+현재 첨부 코드처럼 아래 호출을 사용하면 hint가 적용되지 않습니다.
+
+```java
+BitMatrix bitMatrix = new MultiFormatWriter().encode(
+        url,
+        BarcodeFormat.QR_CODE,
+        width,
+        height
+);
+```
+
+### 6. QRCodeWriter 내부 동작 기준 핵심
+
+ZXing `QRCodeWriter` 소스 기준으로 4개 인자 `encode()`는 바로 5개 인자 `encode(..., null)`을 호출합니다. 이후 `hints`가 존재할 때만 `ERROR_CORRECTION`, `MARGIN`을 읽습니다. 기본값은 `ErrorCorrectionLevel.L`, Quiet Zone `4`입니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/qrcode/QRCodeWriter.java "zxing/core/src/main/java/com/google/zxing/qrcode/QRCodeWriter.java at master · zxing/zxing · GitHub"))  
+정리하면 다음과 같습니다.
+
+```text
+4개 인자 encode()
+→ hints = null
+→ 기본 오류 보정 L
+→ 기본 margin/quiet zone 4
+```
+
+```text
+5개 인자 encode(..., hints)
+→ ERROR_CORRECTION 있으면 적용
+→ MARGIN 있으면 적용
+→ Encoder.encode(contents, errorCorrectionLevel, hints)에 hints 전달
+```
+
+즉, `hintMap`은 **만드는 것만으로는 의미가 없고**, 반드시 `encode(..., hints)`에 전달되어야 합니다.
+
+### 7. 주요 hintMap 설정값
+
+#### 7-1. `EncodeHintType.CHARACTER_SET`
+
+문자 인코딩을 지정합니다. 공식 Javadoc에서도 `CHARACTER_SET`은 적용 가능한 경우 사용할 문자 인코딩을 지정하는 값이며 타입은 `String`이라고 설명합니다. ([ZXing](https://zxing.github.io/zxing/apidocs/com/google/zxing/EncodeHintType.html "EncodeHintType (ZXing 3.5.4 API)"))
+
+```java
+hints.put(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
+```
+
+실무 권장:
+
+```text
+한글, 특수문자, 다국어 URL 가능성이 있으면 UTF-8 명시 권장
+```
+
+주의:
+
+```text
+QR에 넣는 값이 URL이면 URL 자체를 먼저 정상 인코딩해야 함
+예: query string에 한글, &, =, 공백이 들어가는 경우
+```
+
+#### 7-2. `EncodeHintType.ERROR_CORRECTION`
+
+QR 코드의 오류 보정 수준을 지정합니다. 공식 Javadoc 기준으로 QR Code에서는 `ErrorCorrectionLevel` 타입을 사용합니다. ([ZXing](https://zxing.github.io/zxing/apidocs/com/google/zxing/EncodeHintType.html "EncodeHintType (ZXing 3.5.4 API)"))
+
+```java
+hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+```
+
+ZXing 공식 소스의 `ErrorCorrectionLevel`은 QR 표준의 네 가지 오류 보정 레벨을 캡슐화하며, 각 레벨은 대략 `L=7%`, `M=15%`, `Q=25%`, `H=30%` 보정 수준으로 주석 처리되어 있습니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/qrcode/decoder/ErrorCorrectionLevel.java?utm_source=chatgpt.com "zxing/core/src/main/java/com/google/zxing/qrcode/decoder ..."))
+
+| 레벨  | 보정 수준 | 데이터 수용량 | 권장 상황                  |
+| --- | ----: | ------: | ---------------------- |
+| `L` |  약 7% |    가장 큼 | 로고 없는 단순 QR, 깨끗한 화면    |
+| `M` | 약 15% |       큼 | 일반 웹/모바일 QR 기본값        |
+| `Q` | 약 25% |     작아짐 | 인쇄물, 약간의 훼손 가능성        |
+| `H` | 약 30% |   가장 작음 | 로고 삽입 QR, 훼손 가능성 높은 QR |
+
+- 첨부 코드에서는 로고를 QR 중앙에 삽입하면서 `ErrorCorrectionLevel.L`을 설정하려고 했습니다. 하지만 로고가 QR 일부를 가리기 때문에 `L`은 실무적으로 낮습니다. 더구나 현재는 `hintMap`이 전달되지 않아 `L` 설정조차 코드상 명시 효과가 없습니다.
+#### 7-3. `EncodeHintType.MARGIN`
+
+QR 주변 여백, 즉 Quiet Zone을 지정합니다. 공식 `EncodeHintType` 소스에서 `MARGIN`은 바코드 생성 시 사용할 margin을 지정하며, 값 타입은 `Integer` 또는 정수 문자열이라고 설명합니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/EncodeHintType.java "zxing/core/src/main/java/com/google/zxing/EncodeHintType.java at master · zxing/zxing · GitHub"))
+
+```java
+hints.put(EncodeHintType.MARGIN, 2);
+```
+
+실무 판단:
+
+|   값 | 판단                    |
+| --: | --------------------- |
+| `0` | 비권장. 스캐너 인식 실패 가능성 증가 |
+| `1` | 공간이 매우 부족한 경우만 검토     |
+| `2` | 웹 화면용에서 자주 사용하는 절충값   |
+| `4` | ZXing 기본값, 인식 안정성 우선  |
+
+- 로고가 들어가거나 인쇄물로 나갈 QR이면 margin을 너무 줄이지 않는 편이 안전합니다.
+#### 7-4. `EncodeHintType.QR_VERSION`
+
+QR 코드 버전을 강제로 지정합니다. 공식 소스에서 `QR_VERSION`은 “exact version of QR code to be encoded”를 지정하며 타입은 `Integer` 또는 정수 문자열입니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/EncodeHintType.java "zxing/core/src/main/java/com/google/zxing/EncodeHintType.java at master · zxing/zxing · GitHub"))
+
+```java
+hints.put(EncodeHintType.QR_VERSION, 10);
+```
+
+다만 실무에서는 보통 권장하지 않습니다.
+
+| 판단       | 설명                                     |
+| -------- | -------------------------------------- |
+| 자동 선택 권장 | ZXing이 데이터 길이에 맞는 QR 버전을 선택하게 두는 편이 안전 |
+| 고정 사용 주의 | 데이터가 길어지면 생성 실패 또는 비효율적인 QR 발생 가능      |
+| 사용 가능 상황 | 물리 출력 크기, 디자인 가이드, 테스트 기준이 엄격히 고정된 경우  |
+
+- 첨부 코드의 `QR_VERSION = 10`은 현재 전달되지 않아 적용되지 않고 있습니다. 설령 전달되더라도 특별한 이유가 없다면 제거하는 편이 낫습니다.
+#### 7-5. `EncodeHintType.QR_MASK_PATTERN`
+
+QR 마스크 패턴을 강제로 지정합니다. 공식 소스에 따르면 허용값은 `0..QRCode.NUM_MASK_PATTERNS-1`이고, 기본적으로는 최적 마스크 패턴을 자동 선택합니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/EncodeHintType.java "zxing/core/src/main/java/com/google/zxing/EncodeHintType.java at master · zxing/zxing · GitHub"))
+
+```java
+hints.put(EncodeHintType.QR_MASK_PATTERN, 3);
+```
+
+실무에서는 거의 설정하지 않는 편이 좋습니다.
+
+```text
+권장: 자동 선택
+비권장: 특별한 검증 없이 QR_MASK_PATTERN 고정
+```
+
+마스크 패턴은 QR의 검정/흰색 분포를 조정해 스캔성을 높이는 내부 알고리즘 영역에 가깝습니다. 강제로 고정하면 오히려 품질이 나빠질 수 있습니다.
+
+#### 7-6. `EncodeHintType.QR_COMPACT`
+
+QR compact mode 사용 여부입니다. 공식 소스에서는 `QR_COMPACT`가 QR code compact mode 사용 여부를 지정하며, 타입은 `Boolean` 또는 문자열이라고 설명합니다. 또한 compact 수행 시 비 ISO-8859-1 문자는 가장 작은 문자 인코딩을 선택할 수 있고, 일부 스캐너는 특정 인코딩을 지원하지 않을 수 있어 `CHARACTER_SET`으로 UTF-8을 강제할 수 있다고 설명합니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/EncodeHintType.java "zxing/core/src/main/java/com/google/zxing/EncodeHintType.java at master · zxing/zxing · GitHub"))  
+실무에서는 일반 URL QR 생성 시 굳이 사용하지 않는 편이 안전합니다.
+
+### 8. 실무 권장 hintMap 설정
+
+#### 일반 QR
+
+```java
+Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+hints.put(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
+hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
+hints.put(EncodeHintType.MARGIN, 2);
+BitMatrix bitMatrix = new MultiFormatWriter().encode(
+        contents,
+        BarcodeFormat.QR_CODE,
+        width,
+        height,
+        hints
+);
+```
+
+#### 로고 포함 QR
+
+```java
+Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+hints.put(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
+hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+hints.put(EncodeHintType.MARGIN, 2);
+BitMatrix bitMatrix = new MultiFormatWriter().encode(
+        contents,
+        BarcodeFormat.QR_CODE,
+        size,
+        size,
+        hints
+);
+```
+
+#### 설정 판단표
+
+|용도|`CHARACTER_SET`|`ERROR_CORRECTION`|`MARGIN`|`QR_VERSION`|
+|---|---|---|--:|---|
+|일반 URL QR|`UTF-8`|`M`|`2~4`|미지정|
+|주문/픽업 QR|`UTF-8`|`M` 또는 `Q`|`2~4`|미지정|
+|쿠폰 QR|`UTF-8`|`M` 또는 `Q`|`2~4`|미지정|
+|로고 포함 QR|`UTF-8`|`H`|`2~4`|미지정|
+|인쇄물 QR|`UTF-8`|`Q` 또는 `H`|`4` 권장|특수한 경우만|
+
+### 9. 첨부 코드 기준 수정 포인트
+
+현재 코드:
+
+```java
+Hashtable<EncodeHintType, Object> hintMap = new Hashtable<>();
+hintMap.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+hintMap.put(EncodeHintType.QR_VERSION, 10);
+BitMatrix bitMatrix = new MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, width, height);
+```
+
+최소 수정:
+
+```java
+Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+hints.put(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
+hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+hints.put(EncodeHintType.MARGIN, 2);
+BitMatrix bitMatrix = new MultiFormatWriter().encode(
+        url,
+        BarcodeFormat.QR_CODE,
+        width,
+        height,
+        hints
+);
+```
+
+변경 이유:
+
+|변경|이유|
+|---|---|
+|`Hashtable` → `EnumMap`|`EncodeHintType`이 enum이므로 더 적합|
+|`CHARACTER_SET` 추가|한글/다국어/특수문자 안정성 확보|
+|`ERROR_CORRECTION.L` → `H`|로고 삽입으로 가려지는 영역 보정|
+|`QR_VERSION` 제거|자동 선택이 일반적으로 안전|
+|`encode(..., hints)` 사용|설정값 실제 적용|
+
+### 10. BitMatrix와 이미지 크기 관련 주의점
+
+`width`, `height`는 최종 QR 이미지로 렌더링할 선호 크기입니다. `QRCodeWriter` 공식 Javadoc은 `renderResult()`가 QRCode를 `BitMatrix`로 렌더링하고 지정된 크기에 맞게 스케일링한다고 설명합니다. ([ZXing](https://zxing.github.io/zxing/apidocs/com/google/zxing/qrcode/QRCodeWriter.html "QRCodeWriter (ZXing 3.5.4 API)"))  
+주의할 점:
+
+```text
+- QR은 가능하면 정사각형 크기 사용
+- 너무 작은 크기에서는 스캐너 인식률 저하
+- 로고 삽입 시 QR 크기 300px 이상 권장
+- margin을 0으로 줄이면 인식률 저하 가능
+- Base64로 반환하면 원본 PNG보다 문자열 크기가 커짐
+```
+
+### 11. 최종 정리
+
+`BitMatrix`는 ZXing이 생성한 QR 패턴의 2차원 비트 결과물입니다. 이 결과를 `MatrixToImageWriter`나 `ImageIO`로 PNG/BufferedImage/Base64로 바꿔야 실제 화면이나 파일에서 사용할 수 있습니다.  
+`hintMap`은 QR 생성 옵션입니다. 하지만 **반드시 `encode(..., hints)`에 전달해야 적용**됩니다. 첨부 코드에서는 `hintMap`을 만들고도 전달하지 않아 `ERROR_CORRECTION`, `QR_VERSION` 설정이 적용되지 않습니다. 실무에서는 일반 QR은 `UTF-8 + ErrorCorrectionLevel.M + MARGIN 2~4`, 로고 포함 QR은 `UTF-8 + ErrorCorrectionLevel.H + MARGIN 2~4`를 권장하며, `QR_VERSION`, `QR_MASK_PATTERN`은 특별한 검증 사유가 없으면 자동 선택에 맡기는 것이 안전합니다.
