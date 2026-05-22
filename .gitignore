@@ -39,3 +39,4 @@ _site
 /note/.obsidian/plugins/obsidian-git/styles.css
 /note/.obsidian/plugins/obsidian-git/manifest.json
 /note/.obsidian/plugins/obsidian-git/main.js
+/_ss/**/*.*

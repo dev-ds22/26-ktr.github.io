@@ -668,3 +668,186 @@ Referrer-Policy: no-referrer
 ```
 
 이 방식은 QR 이미지가 유출되더라도 원문 개인정보가 없고, 토큰이 짧은 시간 후 만료되며, 한 번 사용되면 재사용이 차단되기 때문에 Spring Framework 5.3 기반 실무 시스템에 적용하기 적절합니다.
+
+## QR생성 예제
+```java
+package sample.util;
+
+import java.awt.AlphaComposite;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.Base64;
+import java.util.Hashtable;
+
+import javax.imageio.ImageIO;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+
+@Component
+public class QrCodeUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QrCodeUtil.class);
+    private static String path = EgovProperties.getProperty("Globals.qrFileStorePath");
+    private static String logoImgPath = EgovProperties.getProperty("Globals.qrLogoPath");
+    private static final int MAX_QR_DIMENSION = 2000;
+
+    public static String createQrCode(String url, int width, int height) {
+        if (url == null || url.isBlank()) {
+            LOGGER.warn("QR 코드 생성 실패: URL이 null이거나 빈 문자열입니다.");
+            return "";
+        }
+        if (width <= 0 || height <= 0) {
+            LOGGER.warn("QR 코드 생성 실패: width와 height는 0보다 커야 합니다. width={}, height={}", width, height);
+            return "";
+        }
+        if (width > MAX_QR_DIMENSION || height > MAX_QR_DIMENSION) {
+            LOGGER.warn("QR 코드 생성 실패: width 또는 height가 허용 최대치를 초과했습니다. 최대={}, width={}, height={}", MAX_QR_DIMENSION,
+                    width, height);
+            return "";
+        }
+
+        try {
+            BitMatrix bitMatrix = new MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, width, height);
+
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
+                byte[] imageBytes = outputStream.toByteArray();
+                return Base64.getEncoder().encodeToString(imageBytes);
+            }
+        } catch (WriterException e) {
+            LOGGER.error("createQrCode - WriterException. url={}, width={}, height={}", url, width, height, e);
+            return "";
+        } catch (NullPointerException e) {
+            LOGGER.error("createQrCode - NullPointerException. url={}, width={}, height={}", url, width, height, e);
+            return "";
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("createQrCode - IllegalArgumentException. url={}, width={}, height={}", url, width, height, e);
+            return "";
+        } catch (IOException e) {
+            LOGGER.error("createQrCode - IOException. url={}, width={}, height={}", url, width, height, e);
+            return "";
+        } catch (RuntimeException e) {
+            LOGGER.error("createQrCode - RuntimeException. url={}, width={}, height={}", url, width, height, e);
+            return "";
+        } catch (Exception e) {
+            LOGGER.error("createQrCode - Exception. url={}, width={}, height={}", url, width, height, e);
+            return "";
+        }
+    }
+
+    public static String createQrCodeInLogo (String url, int width, int height, String imgPath, String fileName) throws Exception {
+        
+        String logoPath = path+logoImgPath+"/logo.png";
+        if(!imgPath.isEmpty() && !fileName.isEmpty()) {
+            
+            //로컬인경우 upload 추가
+            if(!path.contains("bkshare")){
+                logoPath = path+"/upload"+imgPath+"/"+fileName;
+            } else {
+                logoPath = path+imgPath+"/"+fileName;
+            }
+            
+        }
+        
+        // QR 코드 생성
+        Hashtable<EncodeHintType, Object> hintMap = new Hashtable<>();
+        hintMap.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+        hintMap.put(EncodeHintType.QR_VERSION, 10);
+        
+        BitMatrix bitMatrix = new MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, width, height);
+        
+        File logoImg = new File(logoPath);
+        
+        if(logoImg.exists()) {
+            BufferedImage qrImage = MatrixToImageWriter.toBufferedImage(bitMatrix);
+            BufferedImage logoImage = ImageIO.read(logoImg);
+
+            if(qrImage != null && logoImage != null ) {
+                //qr 비율에 맞게 로고 이미지 resize
+                int qrWidth = qrImage.getWidth();
+                int qrHeight = qrImage.getHeight();
+        
+                
+                // 로고 이미지를 QR 코드 중앙에 삽입
+                int logoWidth = logoImage.getWidth();
+                int logoHeight = logoImage.getHeight();
+                
+                int newLogoWidth = 0;
+                int newLogoHeight = 0;
+        
+                
+                if(logoWidth <=110 && logoHeight <= 30) {
+                    newLogoWidth = logoWidth;
+                    newLogoHeight = logoHeight;
+                } else {
+                    newLogoWidth = (qrWidth/2)-60;
+                    newLogoHeight = 0;
+                    
+                    if(logoWidth > newLogoWidth) {
+                        newLogoHeight = (logoHeight * newLogoWidth) / logoWidth;
+                    }
+                }
+                
+                int posX = (qrWidth - newLogoWidth) / 2;
+                int posY = (qrHeight - newLogoHeight) / 2;
+                
+                BufferedImage combined = new BufferedImage(qrImage.getHeight(), qrImage.getWidth(), BufferedImage.TYPE_INT_ARGB);
+                
+                Graphics2D graph = (Graphics2D)combined.getGraphics();
+                graph.drawImage(qrImage, 0, 0, null);
+                graph.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+                graph.drawImage(logoImage, posX, posY, newLogoWidth, newLogoHeight, null);
+                graph.dispose();
+                
+                String base64Image =  "";
+
+                // QR 코드 이미지 출력;
+                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                    ImageIO.write(combined, "PNG", outputStream);
+                    byte[] imageBytes = outputStream.toByteArray();
+                    base64Image = Base64.getEncoder().encodeToString(imageBytes);
+                } catch (NullPointerException e) {
+                    LOGGER.error("createQrCodeInLogo - NullPointerException: {}", e.getMessage(), e);
+                } catch (IllegalArgumentException e) {
+                    LOGGER.error("createQrCodeInLogo - IllegalArgumentException: {}", e.getMessage(), e);
+                } catch (IOException e) {
+                    LOGGER.error("createQrCodeInLogo - IOException: {}", e.getMessage(), e);
+                } catch (RuntimeException e) {
+                    LOGGER.error("createQrCodeInLogo - RuntimeException: {}", e.getMessage(), e);
+                } catch (Exception e) {
+                    LOGGER.error("createQrCodeInLogo - Unexpected Exception: {}", e.getMessage(), e);
+                }
+
+                return base64Image;
+            }
+            return null;
+        } else {
+            throw new Exception("이미지가 없음");
+        }
+    }
+
+    public static BufferedImage ImageResize(BufferedImage image, int width, int height) {
+        BufferedImage outputImage = new BufferedImage(width, height, image.getType());
+        
+        Graphics2D graphics2D = outputImage.createGraphics();
+        graphics2D.drawImage(outputImage, 0, 0, width, height, null);
+        graphics2D.dispose();
+        
+        return outputImage;
+        
+    }
+}
+```
