@@ -1671,3 +1671,295 @@ BitMatrix bitMatrix = new MultiFormatWriter().encode(
 
 `BitMatrix`는 ZXing이 생성한 QR 패턴의 2차원 비트 결과물입니다. 이 결과를 `MatrixToImageWriter`나 `ImageIO`로 PNG/BufferedImage/Base64로 바꿔야 실제 화면이나 파일에서 사용할 수 있습니다.  
 `hintMap`은 QR 생성 옵션입니다. 하지만 **반드시 `encode(..., hints)`에 전달해야 적용**됩니다. 첨부 코드에서는 `hintMap`을 만들고도 전달하지 않아 `ERROR_CORRECTION`, `QR_VERSION` 설정이 적용되지 않습니다. 실무에서는 일반 QR은 `UTF-8 + ErrorCorrectionLevel.M + MARGIN 2~4`, 로고 포함 QR은 `UTF-8 + ErrorCorrectionLevel.H + MARGIN 2~4`를 권장하며, `QR_VERSION`, `QR_MASK_PATTERN`은 특별한 검증 사유가 없으면 자동 선택에 맡기는 것이 안전합니다.
+
+# 4. NegativeArraySizeException
+### NegativeArraySizeException 발생 가능 경우
+
+`NegativeArraySizeException`은 Java에서 **음수 크기의 배열을 생성하려고 할 때 발생하는 RuntimeException**입니다. Oracle JDK 11 공식 문서도 이 예외를 “negative size 배열 생성 시 발생”한다고 정의합니다. ([Oracle Docs](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/NegativeArraySizeException.html "NegativeArraySizeException (Java SE 11 & JDK 11 )"))
+
+```java
+int size = -1;
+byte[] arr = new byte[size]; // NegativeArraySizeException
+```
+
+### 현재 QR 코드 소스에서의 판단
+
+첨부된 QR 코드 소스 안에는 `new byte[-1]`, `new int[-1]`처럼 **직접 음수 배열을 생성하는 코드는 없습니다**. 따라서 현재 코드에서 `NegativeArraySizeException`이 난다면, 대부분은 ZXing, AWT/ImageIO, Base64, 내부 이미지 버퍼 생성 과정에서 **전달된 크기값 또는 계산된 버퍼 크기가 음수가 되는 경우**를 의심해야 합니다. 첨부 코드에서는 기본 QR 생성 메서드 `createQrCode()`에는 `width <= 0 || height <= 0` 검증이 있지만, 로고 포함 메서드 `createQrCodeInLogo()`에는 동일한 크기 검증이 없습니다.
+
+### 발생 가능성이 높은 케이스
+
+|케이스|발생 조건|현재 코드 관련성|판단|
+|---|---|---|---|
+|직접 배열 생성|`new byte[negative]`, `new int[negative]`|직접 코드에는 없음|낮음|
+|QR width/height 음수|`createQrCodeInLogo(url, -1, 300, ...)`|로고 메서드에 검증 없음|가능|
+|이미지 버퍼 크기 overflow|`width * height * pixelSize` 계산이 int 범위 초과|`MAX_QR_DIMENSION` 검증이 로고 메서드에 없음|가능|
+|로고 크기 계산 음수|`newLogoWidth = (qrWidth / 2) - 60` 결과가 음수|QR 크기가 작으면 가능|가능|
+|BufferedImage 생성|음수 width/height로 이미지 생성|`ImageResize()`에서 검증 없음|가능성 있음|
+|ZXing 내부 BitMatrix 생성|내부에서 `int[] bits = new int[...]` 같은 버퍼 생성|크기값 비정상 또는 overflow 시 가능|가능성 있음|
+
+### 1. `createQrCodeInLogo()`에 width/height 검증이 없음
+
+`createQrCode()`는 아래처럼 크기를 검증합니다.
+
+```java
+if (width <= 0 || height <= 0) {
+    return "";
+}
+if (width > MAX_QR_DIMENSION || height > MAX_QR_DIMENSION) {
+    return "";
+}
+```
+
+하지만 `createQrCodeInLogo()`는 같은 검증 없이 바로 QR 생성을 수행합니다.
+
+```java
+BitMatrix bitMatrix = new MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, width, height);
+```
+
+ZXing `QRCodeWriter` 소스 기준으로 `width < 0 || height < 0`이면 `IllegalArgumentException`을 던지도록 되어 있습니다. 즉, ZXing QR 생성 단계에서는 음수 크기가 보통 `NegativeArraySizeException`이 아니라 `IllegalArgumentException`으로 잡힐 가능성이 큽니다. ([GitHub](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/qrcode/QRCodeWriter.java "zxing/core/src/main/java/com/google/zxing/qrcode/QRCodeWriter.java at master · zxing/zxing · GitHub"))  
+그래도 실무적으로는 `createQrCodeInLogo()`에도 반드시 같은 검증을 넣어야 합니다.
+
+```java
+private static void validateQrSize(int width, int height) {
+    if (width <= 0 || height <= 0) {
+        throw new IllegalArgumentException("QR 크기는 0보다 커야 합니다.");
+    }
+    if (width > MAX_QR_DIMENSION || height > MAX_QR_DIMENSION) {
+        throw new IllegalArgumentException("QR 크기가 허용 최대값을 초과했습니다.");
+    }
+}
+```
+
+### 2. 너무 큰 width/height로 인한 int overflow
+
+`NegativeArraySizeException`은 단순히 음수 파라미터만이 아니라, 내부 계산 결과가 음수가 될 때도 발생할 수 있습니다.  
+예:
+
+```java
+int width = 100000;
+int height = 100000;
+int size = width * height * 4; // int overflow로 음수 가능
+byte[] buffer = new byte[size]; // NegativeArraySizeException 가능
+```
+
+현재 `createQrCode()`는 `MAX_QR_DIMENSION = 2000` 검증이 있어 어느 정도 방어가 됩니다. 하지만 `createQrCodeInLogo()`와 `ImageResize()`에는 이 검증이 없습니다.  
+따라서 외부 입력으로 큰 값이 들어오면 다음 계층에서 문제가 날 수 있습니다.
+
+```text
+MultiFormatWriter / BitMatrix 내부 배열
+BufferedImage 내부 Raster/DataBuffer
+ImageIO 내부 인코딩 버퍼
+Base64 인코딩 대상 byte[]
+```
+
+### 3. 로고 크기 계산에서 음수 크기 발생 가능
+
+첨부 코드에는 다음 로직이 있습니다.
+
+```java
+newLogoWidth = (qrWidth / 2) - 60;
+newLogoHeight = 0;
+
+if (logoWidth > newLogoWidth) {
+    newLogoHeight = (logoHeight * newLogoWidth) / logoWidth;
+}
+```
+
+예를 들어 QR 이미지가 작으면 다음처럼 됩니다.
+
+```text
+qrWidth = 100
+newLogoWidth = (100 / 2) - 60 = -10
+```
+
+그 다음:
+
+```java
+newLogoHeight = (logoHeight * -10) / logoWidth;
+```
+
+즉 `newLogoWidth`, `newLogoHeight`가 음수가 될 수 있습니다.  
+이 값은 바로 배열 생성에 쓰이지는 않지만, 아래 이미지 그리기 API에 전달됩니다.
+
+```java
+graph.drawImage(logoImage, posX, posY, newLogoWidth, newLogoHeight, null);
+```
+
+`Graphics.drawImage()`는 음수 width/height를 뒤집기 처리처럼 해석할 수도 있어 즉시 `NegativeArraySizeException`을 보장하지는 않습니다. 하지만 이후 이미지 처리, 리사이즈, 다른 API와 결합될 때 비정상 크기 전파의 원인이 됩니다.  
+실무적으로는 아래처럼 제한해야 합니다.
+
+```java
+int maxLogoWidth = Math.max(1, qrWidth / 5);
+int maxLogoHeight = Math.max(1, qrHeight / 5);
+
+double scale = Math.min(
+        (double) maxLogoWidth / logoWidth,
+        (double) maxLogoHeight / logoHeight
+);
+
+int newLogoWidth = Math.max(1, (int) Math.round(logoWidth * scale));
+int newLogoHeight = Math.max(1, (int) Math.round(logoHeight * scale));
+```
+
+### 4. `BufferedImage` 생성 시 음수/0 크기
+
+현재 코드에는 `BufferedImage` 생성이 두 곳 있습니다.
+
+```java
+BufferedImage combined = new BufferedImage(qrImage.getHeight(), qrImage.getWidth(), BufferedImage.TYPE_INT_ARGB);
+```
+
+```java
+BufferedImage outputImage = new BufferedImage(width, height, image.getType());
+```
+
+`BufferedImage(int width, int height, int imageType)`는 지정한 width/height로 이미지를 생성하는 생성자입니다. 공식 Javadoc에서 이 생성자는 `width`, `height`, `imageType`을 인자로 받는다고 정의되어 있습니다. ([Oracle Docs](https://docs.oracle.com/javase/8/docs/api/java/awt/image/BufferedImage.html "BufferedImage (Java Platform SE 8 )"))  
+일반적으로 JDK의 `BufferedImage` 생성자는 width/height가 0 이하이면 `IllegalArgumentException`으로 터지는 경우가 많습니다. 다만 내부 구현이나 관련 Raster/DataBuffer 생성 과정에서 계산된 배열 크기가 음수가 되면 `NegativeArraySizeException`이 발생할 수 있습니다. 그래서 실무에서는 생성자 호출 전에 직접 검증하는 것이 맞습니다.
+
+```java
+private static void validateImageSize(int width, int height) {
+    if (width <= 0 || height <= 0) {
+        throw new IllegalArgumentException("이미지 크기는 0보다 커야 합니다.");
+    }
+    if (width > MAX_QR_DIMENSION || height > MAX_QR_DIMENSION) {
+        throw new IllegalArgumentException("이미지 크기가 허용 최대값을 초과했습니다.");
+    }
+}
+```
+
+### 5. 현재 코드에서 가장 의심해야 할 위치
+
+#### 5-1. 1순위: `createQrCodeInLogo()`의 크기 검증 누락
+
+```java
+public static String createQrCodeInLogo(String url, int width, int height, ...)
+```
+
+이 메서드는 외부에서 받은 `width`, `height`를 검증 없이 사용합니다.  
+발생 가능 입력:
+
+```java
+createQrCodeInLogo(url, -1, 300, imgPath, fileName);
+createQrCodeInLogo(url, 999999, 999999, imgPath, fileName);
+createQrCodeInLogo(url, 100, 100, imgPath, fileName);
+```
+
+첫 번째는 ZXing 단계에서 `IllegalArgumentException` 가능성이 크고, 두 번째는 내부 버퍼 계산 overflow로 `NegativeArraySizeException` 또는 `OutOfMemoryError` 가능성이 있습니다. 세 번째는 로고 크기 계산에서 `newLogoWidth`가 음수가 될 수 있습니다.
+
+#### 5-2. 2순위: 로고 크기 계산
+
+```java
+newLogoWidth = (qrWidth / 2) - 60;
+```
+
+QR 크기가 `119px` 이하이면 `newLogoWidth`는 음수 또는 0이 됩니다.
+
+```text
+qrWidth = 100 → newLogoWidth = -10
+qrWidth = 120 → newLogoWidth = 0
+qrWidth = 200 → newLogoWidth = 40
+```
+
+즉, 현재 로직은 최소 QR 크기를 강제하지 않으면 매우 쉽게 비정상 로고 크기를 만들 수 있습니다.
+
+#### 5-3. 3순위: `ImageResize()`
+
+```java
+public static BufferedImage ImageResize(BufferedImage image, int width, int height) {
+    BufferedImage outputImage = new BufferedImage(width, height, image.getType());
+    ...
+}
+```
+
+이 메서드는 `width`, `height`, `image`에 대한 검증이 없습니다. 또한 내부에서 원본 `image`가 아니라 `outputImage`를 그리고 있어 리사이즈 로직 자체도 잘못되어 있습니다.  
+수정:
+
+```java
+public static BufferedImage resize(BufferedImage image, int width, int height) {
+    if (image == null) {
+        throw new IllegalArgumentException("image는 필수입니다.");
+    }
+    validateImageSize(width, height);
+
+    BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+    Graphics2D g = outputImage.createGraphics();
+    try {
+        g.drawImage(image, 0, 0, width, height, null);
+    } finally {
+        g.dispose();
+    }
+    return outputImage;
+}
+```
+
+### 6. 현재 코드에 바로 적용할 방어 코드
+
+```java
+private static final int MIN_QR_DIMENSION = 200;
+private static final int MAX_QR_DIMENSION = 2000;
+
+private static void validateQrInput(String url, int width, int height) {
+    if (url == null || url.isBlank()) {
+        throw new IllegalArgumentException("QR URL은 필수입니다.");
+    }
+    if (width != height) {
+        throw new IllegalArgumentException("QR 이미지는 정사각형을 권장합니다.");
+    }
+    if (width < MIN_QR_DIMENSION || height < MIN_QR_DIMENSION) {
+        throw new IllegalArgumentException("QR 크기는 최소 " + MIN_QR_DIMENSION + "px 이상이어야 합니다.");
+    }
+    if (width > MAX_QR_DIMENSION || height > MAX_QR_DIMENSION) {
+        throw new IllegalArgumentException("QR 크기가 허용 최대값을 초과했습니다.");
+    }
+}
+```
+
+로고 크기는 QR 대비 비율로 계산합니다.
+
+```java
+private static int[] calculateLogoSize(BufferedImage qrImage, BufferedImage logoImage) {
+    int qrWidth = qrImage.getWidth();
+    int qrHeight = qrImage.getHeight();
+    int logoWidth = logoImage.getWidth();
+    int logoHeight = logoImage.getHeight();
+
+    if (logoWidth <= 0 || logoHeight <= 0) {
+        throw new IllegalArgumentException("로고 이미지 크기가 비정상입니다.");
+    }
+
+    int maxLogoWidth = Math.max(1, qrWidth / 5);
+    int maxLogoHeight = Math.max(1, qrHeight / 5);
+
+    double scale = Math.min(
+            (double) maxLogoWidth / logoWidth,
+            (double) maxLogoHeight / logoHeight
+    );
+
+    int resizedWidth = Math.max(1, (int) Math.round(logoWidth * scale));
+    int resizedHeight = Math.max(1, (int) Math.round(logoHeight * scale));
+
+    return new int[] { resizedWidth, resizedHeight };
+}
+```
+
+### 7. 예외 처리 관점
+
+`NegativeArraySizeException`은 `RuntimeException` 하위 예외이므로 현재 코드의 `catch (RuntimeException e)` 또는 뒤의 `catch (Exception e)`에 잡힐 수 있습니다. 하지만 잡아서 빈 문자열을 반환하는 방식은 원인 파악을 어렵게 합니다.  
+권장:
+
+```java
+try {
+    ...
+} catch (WriterException | IOException e) {
+    throw new IllegalStateException("QR 이미지 생성 실패", e);
+} catch (RuntimeException e) {
+    LOGGER.error("QR 이미지 처리 중 런타임 오류. width={}, height={}", width, height, e);
+    throw e;
+}
+```
+
+특히 `NegativeArraySizeException`이 발생했다면 대부분 **입력 크기 검증 누락 또는 내부 크기 계산 overflow**이므로, catch로 숨기기보다 로그를 남기고 실패를 명확히 올리는 편이 맞습니다.
+
+### 8. 결론
+
+현재 첨부 코드에서 `NegativeArraySizeException`이 직접 발생할 만한 배열 생성 코드는 보이지 않습니다. 하지만 `createQrCodeInLogo()`와 `ImageResize()`에는 `width`, `height` 검증이 없고, 로고 크기 계산에서 `newLogoWidth = (qrWidth / 2) - 60`이 음수가 될 수 있습니다. 따라서 실제 발생 원인은 **비정상 width/height 입력**, **큰 이미지 크기 계산 overflow**, **로고 크기 계산 결과 음수 전파** 중 하나일 가능성이 큽니다. 우선 `createQrCodeInLogo()` 시작 부분에 `url`, `width`, `height` 검증을 추가하고, 로고 크기를 QR 대비 15~20% 비율로 제한하는 방식으로 수정하는 것이 가장 안전합니다.
