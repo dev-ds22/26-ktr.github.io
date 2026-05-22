@@ -669,7 +669,8 @@ Referrer-Policy: no-referrer
 
 이 방식은 QR 이미지가 유출되더라도 원문 개인정보가 없고, 토큰이 짧은 시간 후 만료되며, 한 번 사용되면 재사용이 차단되기 때문에 Spring Framework 5.3 기반 실무 시스템에 적용하기 적절합니다.
 
-## QR생성 예제
+## QR생성 개선
+
 ```java
 package sample.util;
 
@@ -851,3 +852,471 @@ public class QrCodeUtil {
     }
 }
 ```
+### QR Code 생성 소스 개선점점
+
+첨부 소스는 `createQrCode()`와 `createQrCodeInLogo()`로 QR 이미지를 생성하고 Base64 문자열로 반환하는 구조입니다. 기본 QR 생성은 동작 가능성이 있지만, **로고 삽입 QR의 인식률 저하**, **설정 미적용**, **예외 처리 불명확**, **파일 경로 보안**, **민감 URL 로그 노출** 측면에서 실무 개선이 필요합니다.
+
+### 1. 핵심 문제 요약
+
+|구분|현재 문제|실무 영향|개선 방향|
+|---|---|---|---|
+|힌트 미적용|`hintMap` 생성 후 `encode()`에 전달하지 않음|오류 보정/QR 버전 설정이 실제 적용되지 않음|`encode(..., hints)` 사용|
+|오류 보정|로고 삽입인데 `ErrorCorrectionLevel.L` 사용|로고가 QR 일부를 가리면 인식률 저하|로고 QR은 `Q` 또는 `H` 권장|
+|입력 검증|`createQrCodeInLogo()`는 `url`, `imgPath`, `fileName`, 크기 검증 부족|NPE, 비정상 QR, 장애 원인 추적 어려움|공통 검증 메서드 적용|
+|반환값|`""`, `null`, `throw Exception` 혼재|호출부에서 실패 원인 판단 어려움|일관되게 예외 또는 결과 객체 사용|
+|로그|오류 로그에 `url` 원문 출력|QR URL에 토큰 포함 시 로그 유출 위험|URL 원문 로그 금지|
+|파일 경로|`imgPath`, `fileName` 직접 문자열 결합|Path Traversal 가능성|`Path.resolve().normalize()` 사용|
+|로고 크기|로고 크기 계산이 불안정|로고가 너무 크거나 높이 0 가능|QR 대비 비율 제한|
+|이미지 생성|`BufferedImage(qrImage.getHeight(), qrImage.getWidth())`|정사각형이 아니면 가로/세로 뒤바뀜|`width, height` 순서 사용|
+|Resize 버그|`drawImage(outputImage, ...)` 사용|원본 이미지가 아니라 빈 이미지 자체를 그림|`drawImage(image, ...)`로 수정|
+
+### 2. 현재 소스의 주요 문제점
+
+#### 2-1. `hintMap`이 실제 QR 생성에 사용되지 않음
+
+현재 `createQrCodeInLogo()`에서는 아래처럼 힌트를 만들고 있습니다.
+
+```java
+Hashtable<EncodeHintType, Object> hintMap = new Hashtable<>();
+hintMap.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+hintMap.put(EncodeHintType.QR_VERSION, 10);
+BitMatrix bitMatrix = new MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, width, height);
+```
+
+문제는 `hintMap`을 만들었지만 `encode()` 호출에 넘기지 않는다는 점입니다. 따라서 `ERROR_CORRECTION`, `QR_VERSION` 설정은 실제 QR 생성에 반영되지 않습니다.  
+개선:
+
+```java
+BitMatrix bitMatrix = new MultiFormatWriter().encode(
+        url,
+        BarcodeFormat.QR_CODE,
+        width,
+        height,
+        hintMap
+);
+```
+
+#### 2-2. 로고 삽입 QR에 `ErrorCorrectionLevel.L`은 부적절
+
+로고를 QR 중앙에 덮어씌우면 QR 코드의 일부 데이터 영역이 가려집니다. 그런데 현재 코드는 로고 삽입용 힌트에서 `ErrorCorrectionLevel.L`을 사용하고 있습니다.  
+실무 권장:
+
+|상황|권장 오류 보정|
+|---|---|
+|일반 QR|`M`|
+|로고 없는 짧은 URL QR|`M`|
+|로고 삽입 QR|`Q` 또는 `H`|
+|인쇄물/오염 가능성 있음|`Q` 또는 `H`|
+|단, 오류 보정 레벨을 높이면 QR 패턴이 복잡해질 수 있으므로 **QR에 담는 문자열은 짧게 유지**해야 합니다.||
+
+#### 2-3. `QR_VERSION` 고정은 실무에서 권장하지 않음
+
+현재 코드에는 `QR_VERSION = 10` 설정이 있습니다. 다만 실제로는 힌트가 적용되지 않고 있습니다.  
+실무에서는 QR 버전을 고정하기보다 ZXing이 데이터 길이에 맞게 자동 선택하게 두는 편이 안전합니다. QR 버전을 고정하면 데이터가 길어졌을 때 생성 실패 또는 비효율적인 QR이 될 수 있습니다.  
+권장:
+
+```java
+hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+hints.put(EncodeHintType.MARGIN, 2);
+// QR_VERSION은 기본적으로 지정하지 않음
+```
+
+#### 2-4. `createQrCodeInLogo()` 입력값 검증 부족
+
+`createQrCode()`에는 `url`, `width`, `height`, 최대 크기 검증이 있습니다. 반면 `createQrCodeInLogo()`에는 동일한 검증이 없습니다. 특히 아래 코드는 `imgPath` 또는 `fileName`이 `null`이면 바로 NPE가 발생합니다.
+
+```java
+if(!imgPath.isEmpty() && !fileName.isEmpty()) {
+```
+
+개선:
+
+```java
+if (imgPath != null && !imgPath.isBlank() && fileName != null && !fileName.isBlank()) {
+```
+
+또는 더 좋게는 공통 검증 메서드를 사용합니다.
+
+#### 2-5. 실패 반환값이 일관되지 않음
+
+현재 실패 시 반환 방식이 섞여 있습니다.
+
+|메서드|실패 시 반환|
+|---|---|
+|`createQrCode()`|`""`|
+|`createQrCodeInLogo()`|`null`, `""`, `throw Exception` 혼재|
+|이 방식은 호출부에서 실패 원인을 알기 어렵습니다. 실무에서는 아래 중 하나로 통일하는 것이 좋습니다.||
+|방식|권장도|
+|---|---:|
+|예외 발생|높음|
+|결과 객체 반환|높음|
+|빈 문자열 반환|낮음|
+|권장:||
+
+```java
+throw new IllegalStateException("QR 코드 생성 실패", e);
+```
+
+#### 2-6. URL 원문 로그 출력은 위험
+
+현재 `createQrCode()` 예외 로그에는 `url` 원문이 출력됩니다.
+
+```java
+LOGGER.error("createQrCode - WriterException. url={}, width={}, height={}", url, width, height, e);
+```
+
+QR URL에 주문 토큰, 쿠폰 토큰, 인증 토큰이 들어가면 로그에 민감 값이 남습니다.  
+개선:
+
+```java
+LOGGER.error("QR 코드 생성 실패. width={}, height={}", width, height, e);
+```
+
+필요하면 URL 전체가 아니라 업무 ID, 요청 ID, 토큰 해시 일부만 기록합니다.
+
+#### 2-7. 파일 경로 조립 방식이 위험
+
+현재 로고 경로는 문자열 결합으로 만들어집니다.
+
+```java
+logoPath = path + "/upload" + imgPath + "/" + fileName;
+```
+
+이 방식은 `imgPath`나 `fileName`에 `../`가 들어가는 경우 의도하지 않은 파일 접근이 가능해질 수 있습니다.  
+실무 개선:
+
+```java
+Path baseDir = Paths.get(path, "upload").toAbsolutePath().normalize();
+Path logoFile = baseDir.resolve(imgPath).resolve(fileName).normalize();
+if (!logoFile.startsWith(baseDir)) {
+    throw new IllegalArgumentException("허용되지 않은 파일 경로입니다.");
+}
+```
+
+#### 2-8. 로고 크기 계산 로직이 불안정
+
+현재 로고 크기 계산은 아래 문제가 있습니다.
+
+```java
+newLogoWidth = (qrWidth / 2) - 60;
+newLogoHeight = 0;
+if (logoWidth > newLogoWidth) {
+    newLogoHeight = (logoHeight * newLogoWidth) / logoWidth;
+}
+```
+
+문제:
+
+- QR 크기가 작으면 `newLogoWidth`가 0 이하가 될 수 있음
+    
+- `logoWidth <= newLogoWidth`인 경우 `newLogoHeight`가 0으로 남을 수 있음
+    
+- 로고가 QR의 너무 큰 영역을 가릴 수 있음
+    
+- 로고 뒤 흰색 배경이 없어 QR 패턴과 로고가 섞일 수 있음  
+    실무 권장:
+    
+
+```text
+로고 가로/세로는 QR 전체 크기의 약 15~20% 이내로 제한
+로고 뒤에는 흰색 배경을 먼저 그림
+오류 보정 레벨은 Q 또는 H 사용
+```
+
+#### 2-9. `BufferedImage` 생성 시 width/height 순서 오류 가능
+
+현재 코드:
+
+```java
+BufferedImage combined = new BufferedImage(qrImage.getHeight(), qrImage.getWidth(), BufferedImage.TYPE_INT_ARGB);
+```
+
+`BufferedImage` 생성자는 `(width, height, type)` 순서입니다. QR을 항상 정사각형으로 만들면 문제를 못 느낄 수 있지만, 가로/세로가 다른 값으로 들어오면 이미지 크기가 뒤바뀝니다.  
+개선:
+
+```java
+BufferedImage combined = new BufferedImage(qrImage.getWidth(), qrImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+```
+
+#### 2-10. `ImageResize()` 메서드에 명확한 버그 존재
+
+현재 코드:
+
+```java
+graphics2D.drawImage(outputImage, 0, 0, width, height, null);
+```
+
+여기서는 원본 `image`가 아니라 새로 만든 `outputImage`를 자기 자신에게 그리고 있습니다. 따라서 정상적인 리사이즈가 아닙니다.  
+수정:
+
+```java
+graphics2D.drawImage(image, 0, 0, width, height, null);
+```
+
+### 3. 최소 수정안
+
+현재 구조를 크게 바꾸지 않고 당장 안정성을 높이려면 아래 정도는 반영하는 것이 좋습니다.
+
+```java
+Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+hints.put(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
+hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+hints.put(EncodeHintType.MARGIN, 2);
+BitMatrix bitMatrix = new MultiFormatWriter().encode(
+        url,
+        BarcodeFormat.QR_CODE,
+        width,
+        height,
+        hints
+);
+```
+
+그리고 `createQrCodeInLogo()` 시작 부분에 다음 검증을 추가합니다.
+
+```java
+if (url == null || url.isBlank()) {
+    throw new IllegalArgumentException("QR URL은 필수입니다.");
+}
+if (width <= 0 || height <= 0 || width > MAX_QR_DIMENSION || height > MAX_QR_DIMENSION) {
+    throw new IllegalArgumentException("QR 이미지 크기가 허용 범위를 벗어났습니다.");
+}
+if (width != height) {
+    throw new IllegalArgumentException("QR 이미지는 정사각형 크기를 권장합니다.");
+}
+```
+
+### 4. 실무 개선 예제
+
+아래 예제는 Java 11, Spring Framework 5.3 환경에서 사용할 수 있는 형태입니다. 핵심은 **입력 검증**, **UTF-8**, **오류 보정 레벨**, **로고 크기 제한**, **경로 검증**, **일관된 예외 처리**입니다.
+
+```java
+package sample.util;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import javax.imageio.ImageIO;
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
+import java.util.EnumMap;
+import java.util.Map;
+public final class QrCodeUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QrCodeUtil.class);
+    private static final int MAX_QR_DIMENSION = 2000;
+    private static final int MIN_QR_DIMENSION = 100;
+    private QrCodeUtil() {
+    }
+    public static String createQrBase64(String contents, int width, int height) {
+        validateContentsAndSize(contents, width, height);
+        try {
+            BitMatrix matrix = createQrMatrix(contents, width, height, ErrorCorrectionLevel.M);
+            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                MatrixToImageWriter.writeToStream(matrix, "PNG", out);
+                return Base64.getEncoder().encodeToString(out.toByteArray());
+            }
+        } catch (Exception e) {
+            LOGGER.error("QR 코드 생성 실패. width={}, height={}", width, height, e);
+            throw new IllegalStateException("QR 코드 생성 실패", e);
+        }
+    }
+    public static String createQrWithLogoBase64(String contents, int size, Path logoFile) {
+        validateContentsAndSize(contents, size, size);
+        validateLogoFile(logoFile);
+        try {
+            BitMatrix matrix = createQrMatrix(contents, size, size, ErrorCorrectionLevel.H);
+            BufferedImage qrImage = MatrixToImageWriter.toBufferedImage(matrix);
+            BufferedImage logoImage = ImageIO.read(logoFile.toFile());
+            if (logoImage == null) {
+                throw new IllegalArgumentException("지원하지 않는 로고 이미지 형식입니다.");
+            }
+            BufferedImage combined = drawLogo(qrImage, logoImage);
+            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                ImageIO.write(combined, "PNG", out);
+                return Base64.getEncoder().encodeToString(out.toByteArray());
+            }
+        } catch (Exception e) {
+            LOGGER.error("로고 포함 QR 코드 생성 실패. size={}, logoFile={}", size, safeFileName(logoFile), e);
+            throw new IllegalStateException("로고 포함 QR 코드 생성 실패", e);
+        }
+    }
+    private static BitMatrix createQrMatrix(String contents, int width, int height, ErrorCorrectionLevel level) throws Exception {
+        Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+        hints.put(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
+        hints.put(EncodeHintType.ERROR_CORRECTION, level);
+        hints.put(EncodeHintType.MARGIN, 2);
+        return new MultiFormatWriter().encode(
+                contents,
+                BarcodeFormat.QR_CODE,
+                width,
+                height,
+                hints
+        );
+    }
+    private static BufferedImage drawLogo(BufferedImage qrImage, BufferedImage logoImage) {
+        int qrWidth = qrImage.getWidth();
+        int qrHeight = qrImage.getHeight();
+        int maxLogoWidth = qrWidth / 5;
+        int maxLogoHeight = qrHeight / 5;
+        int logoWidth = logoImage.getWidth();
+        int logoHeight = logoImage.getHeight();
+        double scale = Math.min(
+                (double) maxLogoWidth / logoWidth,
+                (double) maxLogoHeight / logoHeight
+        );
+        int resizedLogoWidth = Math.max(1, (int) Math.round(logoWidth * scale));
+        int resizedLogoHeight = Math.max(1, (int) Math.round(logoHeight * scale));
+        int posX = (qrWidth - resizedLogoWidth) / 2;
+        int posY = (qrHeight - resizedLogoHeight) / 2;
+        int padding = Math.max(4, qrWidth / 50);
+        BufferedImage combined = new BufferedImage(qrWidth, qrHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = combined.createGraphics();
+        try {
+            g.drawImage(qrImage, 0, 0, null);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+            g.setColor(Color.WHITE);
+            g.fillRect(
+                    posX - padding,
+                    posY - padding,
+                    resizedLogoWidth + padding * 2,
+                    resizedLogoHeight + padding * 2
+            );
+            g.drawImage(logoImage, posX, posY, resizedLogoWidth, resizedLogoHeight, null);
+        } finally {
+            g.dispose();
+        }
+        return combined;
+    }
+    private static void validateContentsAndSize(String contents, int width, int height) {
+        if (contents == null || contents.isBlank()) {
+            throw new IllegalArgumentException("QR 내용은 필수입니다.");
+        }
+        if (contents.length() > 1000) {
+            throw new IllegalArgumentException("QR 내용이 너무 깁니다. 짧은 URL 또는 토큰 사용을 권장합니다.");
+        }
+        if (width < MIN_QR_DIMENSION || height < MIN_QR_DIMENSION) {
+            throw new IllegalArgumentException("QR 크기는 최소 " + MIN_QR_DIMENSION + "px 이상이어야 합니다.");
+        }
+        if (width > MAX_QR_DIMENSION || height > MAX_QR_DIMENSION) {
+            throw new IllegalArgumentException("QR 크기가 허용 최대값을 초과했습니다.");
+        }
+    }
+    private static void validateLogoFile(Path logoFile) {
+        if (logoFile == null) {
+            throw new IllegalArgumentException("로고 파일 경로는 필수입니다.");
+        }
+        if (!Files.isRegularFile(logoFile)) {
+            throw new IllegalArgumentException("로고 파일이 존재하지 않습니다.");
+        }
+    }
+    private static String safeFileName(Path path) {
+        return path == null || path.getFileName() == null ? "" : path.getFileName().toString();
+    }
+}
+```
+
+### 5. 파일 경로 보안 개선 예제
+
+사용자가 업로드한 로고 또는 서버에 저장된 로고를 사용할 경우, 문자열 결합 대신 `Path` 기반으로 검증해야 합니다.
+
+```java
+public static Path resolveLogoPath(Path baseDir, String imgPath, String fileName) {
+    if (baseDir == null) {
+        throw new IllegalArgumentException("기준 경로는 필수입니다.");
+    }
+    if (imgPath == null || imgPath.isBlank()) {
+        throw new IllegalArgumentException("이미지 경로는 필수입니다.");
+    }
+    if (fileName == null || fileName.isBlank()) {
+        throw new IllegalArgumentException("파일명은 필수입니다.");
+    }
+    if (!fileName.endsWith(".png") && !fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
+        throw new IllegalArgumentException("허용되지 않은 로고 파일 형식입니다.");
+    }
+    Path normalizedBase = baseDir.toAbsolutePath().normalize();
+    Path resolved = normalizedBase.resolve(imgPath).resolve(fileName).normalize();
+    if (!resolved.startsWith(normalizedBase)) {
+        throw new IllegalArgumentException("허용되지 않은 파일 경로입니다.");
+    }
+    return resolved;
+}
+```
+
+### 6. QR에 담는 값 개선
+
+현재 유틸은 전달받은 `url`을 그대로 QR에 넣습니다. 실무에서는 QR에 업무 데이터를 직접 넣지 말고 **짧은 토큰 URL**을 넣는 것이 안전합니다.
+
+```text
+비권장:
+https://example.com/order/pickup?orderId=12345&userId=1001&phone=010...
+권장:
+https://example.com/qr/pickup?t=eyJhbGci...
+더 권장:
+https://example.com/qr/pickup?t=난수토큰
+```
+
+권장 서버 검증:
+
+```text
+1. QR 토큰 수신
+2. 토큰 해시 조회
+3. 만료 시간 확인
+4. 사용 여부 확인
+5. 주문/쿠폰/픽업 상태 확인
+6. USED 처리
+7. 업무 처리
+```
+
+### 7. Spring Controller 반환 방식 개선
+
+Base64 문자열만 반환할지, PNG 바이트를 직접 반환할지 명확히 정해야 합니다. 웹 화면에서 `<img>`에 직접 넣을 목적이면 Base64도 가능하지만, API/이미지 응답으로는 `byte[]`가 더 단순합니다.
+
+#### PNG 직접 응답 권장 예
+
+```java
+@GetMapping(value = "/qr/pickup.png", produces = MediaType.IMAGE_PNG_VALUE)
+public ResponseEntity<byte[]> qr() {
+    String qrUrl = "https://example.com/qr/pickup?t=random-token";
+    byte[] png = QrImageService.createQrPng(qrUrl, 300, 300);
+    return ResponseEntity.ok()
+            .contentType(MediaType.IMAGE_PNG)
+            .cacheControl(CacheControl.noStore())
+            .header(HttpHeaders.PRAGMA, "no-cache")
+            .header(HttpHeaders.EXPIRES, "0")
+            .body(png);
+}
+```
+
+개인화 QR, 주문 QR, 쿠폰 QR은 `Cache-Control: no-store`를 권장합니다.
+
+### 8. 최종 개선 우선순위
+
+|순위|개선 항목|이유|
+|--:|---|---|
+|1|`hintMap`을 `encode()`에 전달|현재 설정이 적용되지 않는 핵심 버그|
+|2|로고 QR 오류 보정 `H` 또는 `Q` 적용|스캔 인식률 개선|
+|3|`createQrCodeInLogo()` 입력값 검증 추가|NPE/비정상 QR 방지|
+|4|URL 원문 로그 제거|토큰/개인정보 로그 유출 방지|
+|5|파일 경로 `Path.normalize()` 검증|Path Traversal 방지|
+|6|반환값 정책 통일|호출부 장애 처리 명확화|
+|7|로고 크기 15~20% 제한|QR 패턴 훼손 최소화|
+|8|`ImageResize()` 버그 수정 또는 삭제|오동작 코드 제거|
+|9|`@Component + static` 구조 정리|테스트/설정 주입 개선|
+|10|QR 내용 토큰화|업무 보안 강화|
+
+### 9. 결론
+
+현재 소스는 **단순 QR Base64 생성**은 가능하지만, 로고 포함 QR은 `hintMap` 미적용, 낮은 오류 보정 레벨, 로고 크기 계산 불안정 때문에 실무 인식률 문제가 발생할 수 있습니다. 또한 QR URL 원문 로그, 문자열 기반 파일 경로 조립, 실패 반환값 혼재는 운영 보안과 장애 대응 측면에서 개선이 필요합니다. 우선은 **힌트 적용**, **오류 보정 `H`**, **입력 검증**, **URL 로그 제거**, **경로 검증**, **반환 정책 통일**부터 반영하는 것이 가장 효과적입니다.
