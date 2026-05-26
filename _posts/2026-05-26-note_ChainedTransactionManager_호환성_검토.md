@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-05-26"
-last_modified_at: "2026-05-26 13:40:38 +0900"
+last_modified_at: "2026-05-26 13:42:59 +0900"
 ---
 ### 1. Spring Framework 5.3과 매칭되는 Spring Data Commons 버전
 
@@ -198,6 +198,7 @@ Spring 5.3은 트랜잭션 동기화(`TransactionSynchronizationManager`)와 스
 ### 4-5. [추가 정리] 기술 심화: Connection Pool Deadlock 공식 계산법
 
 HikariCP 및 DBCP 환경에서 다중 데이터 소스나 스레드 풀이 결합될 때 데드락을 방지하기 위한 최소 커넥션 풀 공식은 다음과 같습니다.
+
    ![Pasted_image_20260526133959](./../../images/2026-05-26-note_ChainedTransactionManage/Pasted_image_20260526133959.png)
 - $Tn$ : 동시 실행 가능한 최대 스레드 수 (톰캣 스레드 풀 등)
 - $Cm$ : 하나의 스레드가 하나의 트랜잭션을 완료하기 위해 동시에 필요한 최대 커넥션 수
