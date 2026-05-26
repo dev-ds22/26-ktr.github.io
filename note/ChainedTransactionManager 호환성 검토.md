@@ -147,17 +147,18 @@ Spring 5.3은 트랜잭션 동기화(`TransactionSynchronizationManager`)와 스
 2. **진짜 100% 동기화가 필요한 경우:**
     
     - 데이터가 절대 틀어지면 안 되는 강력한 글로벌 트랜잭션이 필요하다면, `ChainedTransactionManager` 대신 JTA(Java Transaction API)를 지원하는 **Atomikos** 같은 전문 외부 트랜잭션 매니저를 도입하셔야 합니다.
+
 ### Connection Pool 불균형으로 인한 시스템 전체 마비(Deadlock) 위험
 
 현재 설정(`dataSource`: 100, `dataSourceMail`: 10)과 앞서 정의된 `ChainedTransactionManager` 및 와일드카드(`*`) AOP 포인트컷이 결합될 경우, **동시 요청이 10개를 초과하는 순간 메인 DB(`dataSource`)의 커넥션까지 함께 고갈되어 시스템 전체가 마비되는 전면적 데드락(Deadlock) 장애**가 발생합니다.
 
 #### Connection Pool 불균형의 핵심 문제점 요약
 
-|**지표/상황**|**핵심 DB (dataSource)**|**메일 DB (dataSourceMail)**|**아키텍처적 결과 및 현상**|
-|---|---|---|---|
-|**최대 커넥션 풀**|`maxTotal = 100`|`maxTotal = 10`|**병목 지점:** 시스템의 실질 최대 동시 처리량은 **10**으로 제한됨|
-|**트랜잭션 시작 시**|커넥션 즉시 획득 (성공)|커넥션 부족 시 대기 (Blocking)|메인 DB 커넥션을 쥔 채 메일 DB 커넥션을 기다리는 **자원 데드락** 발생|
-|**11번째 동시 요청**|커넥션 획득 완료 (11/100)|풀 고갈로 인한 무한 대기|`maxWaitMillis` 초과 시 `GetConnectionTimeoutException` 발생|
+| **지표/상황**      | **핵심 DB (dataSource)** | **메일 DB (dataSourceMail)** | **아키텍처적 결과 및 현상**                                       |
+| -------------- | ---------------------- | -------------------------- | ------------------------------------------------------- |
+| **최대 커넥션 풀**   | `maxTotal = 100`       | `maxTotal = 10`            | **병목 지점:** 시스템의 실질 최대 동시 처리량은 **10**으로 제한됨              |
+| **트랜잭션 시작 시**  | 커넥션 즉시 획득 (성공)         | 커넥션 부족 시 대기 (Blocking)     | 메인 DB 커넥션을 쥔 채 메일 DB 커넥션을 기다리는 **자원 데드락** 발생            |
+| **11번째 동시 요청** | 커넥션 획득 완료 (11/100)     | 풀 고갈로 인한 무한 대기             | `maxWaitMillis` 초과 시 `GetConnectionTimeoutException` 발생 |
 
 ##### 1. 세부 장애 메커니즘 분석
 
@@ -173,7 +174,6 @@ Spring 5.3은 트랜잭션 동기화(`TransactionSynchronizationManager`)와 스
     
 4. **교착 상태 진입:** 먼저 도달한 10개 스레드가 메일 커넥션을 모두 고갈시킵니다. (사용량: 10/10). **11번째 스레드는 메일 DB 커넥션을 얻기 위해 대기(Blocking) 상태로 전환되는데, 이때 이미 획득한 메인 DB 커넥션을 반환하지 않고 붙잡고 있습니다.**
     
-
 #### ② 메인 DB 커넥션 풀의 도미노 고갈 (Cascading Exhaustion)
 
 트래픽이 지속해서 유입되면 메일 DB의 풀(`maxTotal=10`) 때문에 대기하는 스레드가 90개까지 늘어날 수 있습니다. 결과적으로 **메인 DB는 풀 용량(100)이 남아있음에도 불구하고, 대기 스레드들이 커넥션을 독점하여 단순 조회 마저도 불가능한 상태**로 전염됩니다.
@@ -190,9 +190,7 @@ Spring 5.3은 트랜잭션 동기화(`TransactionSynchronizationManager`)와 스
 ### [추가 정리] 기술 심화: Connection Pool Deadlock 공식 계산법
 
 HikariCP 및 DBCP 환경에서 다중 데이터 소스나 스레드 풀이 결합될 때 데드락을 방지하기 위한 최소 커넥션 풀 공식은 다음과 같습니다.
-
-$$Pool\;size = Tn \times (Cm - 1) + 1$$
-
+   ![[Pasted image 20260526133959.png]]
 - $Tn$ : 동시 실행 가능한 최대 스레드 수 (톰캣 스레드 풀 등)
 - $Cm$ : 하나의 스레드가 하나의 트랜잭션을 완료하기 위해 동시에 필요한 최대 커넥션 수
     
