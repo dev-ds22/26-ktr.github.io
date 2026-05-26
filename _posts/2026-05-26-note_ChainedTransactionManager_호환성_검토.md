@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-05-26"
-last_modified_at: "2026-05-26 13:42:59 +0900"
+last_modified_at: "2026-05-26 16:23:35 +0900"
 ---
 ### 1. Spring Framework 5.3과 매칭되는 Spring Data Commons 버전
 
