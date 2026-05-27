@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-05-27"
-last_modified_at: "2026-05-27 17:47:49 +0900"
+last_modified_at: "2026-05-27 17:58:18 +0900"
 ---
 ## 1. Service 메소드의 Prefix 취득 Powershell Script
 - 프로젝트 루트에서 실행
