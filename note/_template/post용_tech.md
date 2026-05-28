@@ -386,6 +386,103 @@ function collapseExcessBlankLinesOutsideCodeBlocks(content) {
 
   return result.join("\n").trim() + "\n";
 }
+
+const LIQUID_RAW_OPEN = "{" + "% raw %" + "}";
+const LIQUID_RAW_CLOSE = "{" + "% endraw %" + "}";
+function normalizeLiquidTagLine(line) {
+  return String(line || "").trim().replace(/\s+/g, " ");
+}
+function isLiquidRawOpenLine(line) {
+  return normalizeLiquidTagLine(line) === LIQUID_RAW_OPEN;
+}
+function isLiquidRawCloseLine(line) {
+  return normalizeLiquidTagLine(line) === LIQUID_RAW_CLOSE;
+}
+function containsMermaidBlock(content) {
+  const text = String(content || "");
+  return /(^|\n)\s*(`{3,}|~{3,})\s*mermaid\b/i.test(text) ||
+    /<pre\b[^>]*class\s*=\s*["'][^"']*\bmermaid\b[^"']*["'][^>]*>/i.test(text);
+}
+function isMermaidFenceOpenLine(line) {
+  return String(line || "").match(/^(\s*)(`{3,}|~{3,})\s*mermaid\b.*$/i);
+}
+function isFenceCloseLine(line, fenceMarker) {
+  const marker = String(fenceMarker || "");
+  if (!marker) return false;
+  const fenceChar = marker.charAt(0);
+  const minimumLength = marker.length;
+  const trimmed = String(line || "").trim();
+  if (!trimmed) return false;
+  if (!trimmed.split("").every((ch) => ch === fenceChar)) return false;
+  return trimmed.length >= minimumLength;
+}
+function protectMermaidFencedCodeBlocksFromJekyllLiquid(content) {
+  const lines = String(content || "").replace(/\r\n/g, "\n").split("\n");
+  const result = [];
+  let inRawBlock = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (isLiquidRawOpenLine(line)) {
+      inRawBlock = true;
+      result.push(line);
+      continue;
+    }
+
+    if (isLiquidRawCloseLine(line)) {
+      inRawBlock = false;
+      result.push(line);
+      continue;
+    }
+
+    const openMatch = isMermaidFenceOpenLine(line);
+    if (!openMatch) {
+      result.push(line);
+      continue;
+    }
+
+    const fenceMarker = openMatch[2];
+    const shouldWrap = !inRawBlock;
+
+    if (shouldWrap) {
+      result.push(LIQUID_RAW_OPEN);
+    }
+
+    result.push(line);
+
+    while (i + 1 < lines.length) {
+      i += 1;
+      result.push(lines[i]);
+      if (isFenceCloseLine(lines[i], fenceMarker)) {
+        break;
+      }
+    }
+
+    if (shouldWrap) {
+      result.push(LIQUID_RAW_CLOSE);
+    }
+  }
+
+  return result.join("\n");
+}
+function protectMermaidPreBlocksFromJekyllLiquid(content) {
+  const preRegex = /<pre\b[^>]*class\s*=\s*["'][^"']*\bmermaid\b[^"']*["'][^>]*>[\s\S]*?<\/pre>/gi;
+  return String(content || "").replace(preRegex, (match, offset, fullText) => {
+    const before = fullText.slice(Math.max(0, offset - 50), offset);
+    const after = fullText.slice(offset + match.length, offset + match.length + 50);
+    if (before.trim().endsWith(LIQUID_RAW_OPEN) && after.trim().startsWith(LIQUID_RAW_CLOSE)) {
+      return match;
+    }
+    return LIQUID_RAW_OPEN + "\n" + match + "\n" + LIQUID_RAW_CLOSE;
+  });
+}
+function protectMermaidBlocksFromJekyllLiquid(content) {
+  let text = protectMermaidFencedCodeBlocksFromJekyllLiquid(content);
+  text = protectMermaidPreBlocksFromJekyllLiquid(text);
+  return text;
+}
+
 // 원본 YAML Front Matter 추출
 const frontMatterInfo = extractFrontMatter(originalContent);
 const sourceFrontMatterText = frontMatterInfo.frontMatterText;
@@ -452,8 +549,12 @@ const imageConvertResult = convertObsidianImagesToJekyllMarkdown(
   imageDirName
 );
 originalContent = imageConvertResult.convertedContent;
+// Mermaid 블록 여부를 먼저 확인하여 Front Matter에 기록
+const hasMermaidBlock = containsMermaidBlock(originalContent);
 // Markdown 제목 레벨은 원문을 유지하고, 제목 앞 계층 번호만 재부여
 originalContent = normalizeMarkdownHeadingNumbersPreserveLevels(originalContent);
+// Mermaid 코드블록 내부의 Liquid 유사 문법 때문에 Jekyll 빌드가 깨지지 않도록 보호
+originalContent = protectMermaidBlocksFromJekyllLiquid(originalContent);
 // const headingBlock = hideFirstHeading ? "" : `# ${title}\n\n`;
 const headingBlock = "";
 let newContent = `---
@@ -466,6 +567,7 @@ toc: false
 toc_sticky: true
 date: "${dateOnly}"
 last_modified_at: "${dateTime}"
+mermaid: ${hasMermaidBlock ? "true" : "false"}
 ---
 ${headingBlock}${originalContent}
 <details>
