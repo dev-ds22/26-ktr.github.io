@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-05-28"
-last_modified_at: "2026-05-28 12:19:00 +0900"
+last_modified_at: "2026-05-28 13:37:43 +0900"
 ---
 ## 1. RequestFilter
 
@@ -739,6 +739,646 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 |관측성|body 로그보다 `traceId`, URI, status, elapsed time, user key hash 중심 권장|
 
 최종적으로 이 필터는 **장애 분석용 HTTP 전문 로깅 필터**로는 유용하지만, 현재 형태는 운영 커머스 서비스에 그대로 적용하기에는 위험합니다. 운영에서는 body 전체 로깅보다 `요청 ID`, `URI`, `method`, `status`, `elapsed time`, `client IP`, `user/session 식별자의 마스킹 값` 중심으로 남기고, request/response body는 필요한 URI에 한해 제한적으로 남기는 구조가 더 안전합니다.
+
+## 3. ContentCachingWrapper
+
+- `ContentCachingWrapper`는 보통 Spring Web의 아래 2개 클래스를 함께 부르는 표현입니다.
+
+| 구분       | 클래스                             | 역할                                  |
+| -------- | ------------------------------- | ----------------------------------- |
+| Request  | `ContentCachingRequestWrapper`  | 요청 본문을 캐싱해서 필터/인터셉터에서 나중에 조회 가능하게 함 |
+| Response | `ContentCachingResponseWrapper` | 응답 본문을 캐싱해서 필터에서 응답 내용을 조회 가능하게 함   |
+
+- Spring 공식 Javadoc 기준으로 `ContentCachingRequestWrapper`는 request input stream 또는 reader에서 **읽힌 content를 캐싱**하고, `ContentCachingResponseWrapper`는 response output stream 또는 writer에 **쓰인 content를 캐싱**합니다. 또한 response wrapper는 캐시된 body를 실제 응답으로 복사하기 위해 `copyBodyToResponse()` 호출이 필요합니다. ([Home](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/util/ContentCachingRequestWrapper.html?utm_source=chatgpt.com "ContentCachingRequestWrapper (Spring Framework 7.0.7 API)"))
+#### 3-1-1. 왜 사용하는가
+
+일반적인 Servlet 환경에서 request body와 response stream은 한 번 읽거나 쓰면 다시 조회하기 어렵습니다. 그래서 HTTP 전문 로그, 감사 로그, ETag 계산, 장애 분석용 request/response 추적을 위해 wrapper를 사용합니다.
+
+```text
+Client
+→ Filter에서 ContentCachingRequestWrapper/ResponseWrapper로 감쌈
+→ Controller 실행
+→ request/response body가 wrapper 내부에 캐싱됨
+→ Filter 후처리에서 body 조회
+→ responseWrapper.copyBodyToResponse()
+→ Client 응답
+```
+
+#### 3-1-2. `ContentCachingRequestWrapper` 동작 방식
+
+핵심은 **요청 body를 직접 미리 읽어주는 wrapper가 아니라, 하위 로직에서 읽힌 만큼 캐싱하는 wrapper**라는 점입니다.
+
+| 항목      | 설명                                                       |
+| ------- | -------------------------------------------------------- |
+| 캐싱 시점   | `getInputStream()` 또는 `getReader()`를 통해 body가 읽힐 때       |
+| 조회 메서드  | `getContentAsByteArray()`                                |
+| 주의      | Controller/MessageConverter가 body를 읽지 않으면 캐시도 비어 있을 수 있음 |
+| GET 요청  | 대부분 body가 없으므로 `byte[]`가 비어 있음                           |
+| Form 요청 | 파라미터 처리 방식에 따라 body 캐싱 결과가 기대와 다를 수 있음                   |
+
+- 공식 Javadoc도 이 클래스는 content가 읽히는 동안 캐싱할 뿐이며, request content를 먼저 읽게 만들지는 않는다고 설명합니다. 즉, content가 소비되지 않으면 `getContentAsByteArray()`로 가져올 내용도 없습니다. ([Home](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/util/ContentCachingRequestWrapper.html?utm_source=chatgpt.com "ContentCachingRequestWrapper (Spring Framework 7.0.7 API)"))
+#### 3-1-3. `ContentCachingResponseWrapper` 동작 방식
+
+`ContentCachingResponseWrapper`는 Controller나 View가 response output stream/writer에 쓴 내용을 내부 byte array에 보관합니다.
+
+| 항목     | 설명                                        |
+| ------ | ----------------------------------------- |
+| 캐싱 시점  | 응답 body가 `OutputStream` 또는 `Writer`에 쓰일 때 |
+| 조회 메서드 | `getContentAsByteArray()`                 |
+| 필수 후처리 | `copyBodyToResponse()`                    |
+| 주의     | 복사하지 않으면 클라이언트 응답이 비거나 깨질 수 있음            |
+
+- Spring 공식 Javadoc은 `copyBodyToResponse()`가 캐시된 body content를 wrapped response object로 복사하고 buffer를 flush한다고 설명합니다. 또한 `flushBuffer()` 자체는 content를 underlying response에 복사하지 않으므로 `copyBodyToResponse()`를 호출해야 합니다. ([Home](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/util/ContentCachingResponseWrapper.html?utm_source=chatgpt.com "Class ContentCachingResponseWrapper"))
+#### 3-1-4. 가장 중요한 실무 주의점
+
+|우선|주의점|설명|
+|--:|---|---|
+|1|`copyBodyToResponse()` 보장|응답 wrapper 사용 시 반드시 `finally`에서 호출|
+|2|대용량 응답 제외|엑셀, 이미지, PDF, ZIP, 대량 JSON은 메모리/로그 폭증 위험|
+|3|민감정보 마스킹|비밀번호, 토큰, 쿠키, 개인정보, 주문/결제정보 보호 필요|
+|4|DEBUG OFF 비용 차단|`LOGGER.isDebugEnabled()` 안에서만 body 추출|
+|5|Content-Type 허용 목록|JSON/text/xml 정도만 제한적으로 body 로깅|
+|6|URI 제외|정적 리소스, 다운로드, health, metrics 제외|
+|7|인코딩 처리|UTF-8 고정보다 request/response characterEncoding 우선|
+|8|request body 오해 금지|wrapper가 body를 강제로 읽어주는 것이 아님|
+
+#### 3-1-5. 잘못 사용하면 생기는 문제
+
+##### 3-1-5-1. 응답 유실
+
+위험한 코드:
+
+```java
+chain.doFilter(requestWrapper, responseWrapper);
+String body = new String(responseWrapper.getContentAsByteArray(), "UTF-8");
+// 중간에 예외 발생 가능
+responseWrapper.copyBodyToResponse();
+```
+
+개선:
+
+```java
+try {
+    chain.doFilter(requestWrapper, responseWrapper);
+} finally {
+    responseWrapper.copyBodyToResponse();
+}
+```
+
+더 안전한 구조:
+
+```java
+try {
+    chain.doFilter(requestWrapper, responseWrapper);
+} finally {
+    try {
+        if (LOGGER.isDebugEnabled()) {
+            // logging
+        }
+    } finally {
+        responseWrapper.copyBodyToResponse();
+    }
+}
+```
+
+##### 3-1-5-2. 이미지/엑셀 다운로드 메모리 증가
+
+`ContentCachingResponseWrapper`는 응답 body를 메모리에 캐싱합니다. 따라서 아래 응답은 wrapper 대상에서 제외하는 것이 안전합니다.
+
+```text
+image/png
+image/jpeg
+application/pdf
+application/vnd.ms-excel
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+application/octet-stream
+application/zip
+```
+
+특히 `.xlsx`는 내부적으로 ZIP 구조라 로그에 `PK...` 같은 깨진 문자열이 찍힐 수 있습니다.
+
+##### 3-1-5-3. request body가 비어 보이는 문제
+
+아래처럼 `chain.doFilter()` 전에 body를 조회하면 비어 있을 가능성이 큽니다.
+
+```java
+ContentCachingRequestWrapper wrapper = new ContentCachingRequestWrapper(request);
+byte[] body = wrapper.getContentAsByteArray(); // 대부분 비어 있음
+chain.doFilter(wrapper, response);
+```
+
+보통은 아래처럼 후처리에서 조회해야 합니다.
+
+```java
+ContentCachingRequestWrapper wrapper = new ContentCachingRequestWrapper(request);
+chain.doFilter(wrapper, response);
+byte[] body = wrapper.getContentAsByteArray();
+```
+
+#### 3-1-6. 권장 사용 패턴
+
+```java
+protected void doFilterInternal(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        FilterChain chain
+) throws ServletException, IOException {
+    if (isExcludedUri(request.getRequestURI())) {
+        chain.doFilter(request, response);
+        return;
+    }
+    ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
+    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
+    long start = System.currentTimeMillis();
+    try {
+        chain.doFilter(requestWrapper, responseWrapper);
+    } finally {
+        long elapsed = System.currentTimeMillis() - start;
+        try {
+            if (LOGGER.isDebugEnabled()) {
+                String requestBody = getBody(requestWrapper.getContentAsByteArray(), requestWrapper.getCharacterEncoding(), 4096);
+                String responseBody = shouldLogResponseBody(responseWrapper.getContentType())
+                        ? getBody(responseWrapper.getContentAsByteArray(), responseWrapper.getCharacterEncoding(), 8192)
+                        : " - ";
+                LOGGER.debug(
+                        "[HTTP] method={} uri={} status={} elapsedMs={} request={} response={}",
+                        requestWrapper.getMethod(),
+                        requestWrapper.getRequestURI(),
+                        responseWrapper.getStatus(),
+                        elapsed,
+                        mask(requestBody),
+                        mask(responseBody)
+                );
+            }
+        } finally {
+            responseWrapper.copyBodyToResponse();
+        }
+    }
+}
+```
+
+#### 3-1-7. `shouldLogResponseBody()` 기준
+
+```java
+private boolean shouldLogResponseBody(String contentType) {
+    if (contentType == null) {
+        return false;
+    }
+    String ct = contentType.toLowerCase(Locale.ROOT);
+    return ct.contains("application/json")
+            || ct.contains("application/xml")
+            || ct.contains("text/plain");
+}
+```
+
+제외 권장:
+
+```java
+private boolean isExcludedUri(String uri) {
+    if (uri == null) {
+        return true;
+    }
+    String lower = uri.toLowerCase(Locale.ROOT);
+    return lower.contains("/images/")
+            || lower.contains("/css/")
+            || lower.contains("/js/")
+            || lower.contains("/download")
+            || lower.contains("/excel")
+            || lower.endsWith(".png")
+            || lower.endsWith(".jpg")
+            || lower.endsWith(".jpeg")
+            || lower.endsWith(".gif")
+            || lower.endsWith(".webp")
+            || lower.endsWith(".ico")
+            || lower.endsWith(".pdf")
+            || lower.endsWith(".xls")
+            || lower.endsWith(".xlsx")
+            || lower.endsWith(".zip");
+}
+```
+
+#### 3-1-8. Spring 5.3 커머스 프로젝트 기준 권장 정책
+
+|대상|Request Body|Response Body|권장|
+|---|--:|--:|---|
+|조회 JSON API|제한적 허용|제한적 허용|크기 제한+마스킹|
+|주문 API|제한적 허용|비권장|주문/배송/결제정보 노출 주의|
+|로그인/회원가입|강한 마스킹|비권장|비밀번호/토큰/세션 주의|
+|결제 API|비권장|비권장|전문 로그 별도 보안 영역 관리|
+|엑셀 다운로드|비권장|금지|대용량/개인정보/메모리 위험|
+|이미지/정적 리소스|금지|금지|필터 제외|
+|Health/Metrics|금지|금지|불필요 로그 방지|
+
+#### 3-1-9. AA 관점 최종 권고
+
+`ContentCachingWrapper`는 장애 분석에는 유용하지만, 운영 커머스 시스템에서 **상시 request/response body 로깅 도구로 쓰면 위험**합니다. 가장 안전한 기준은 아래입니다.
+
+```text
+1. 필터 적용 URL을 API 중심으로 제한
+2. 이미지/엑셀/파일/정적 리소스는 wrapper 생성 전 제외
+3. response body는 JSON/text/xml만 허용 목록 방식으로 로깅
+4. request/response body 길이 제한
+5. password/token/cookie/session/order/payment/address 정보 마스킹
+6. responseWrapper.copyBodyToResponse()는 finally에서 보장
+7. 운영 상시 로그는 body보다 method, uri, status, elapsed, traceId 중심으로 남김
+```
+
+현재 프로젝트의 `RequestFilter`처럼 `text/html`만 제외하고 나머지 응답 body를 모두 읽는 방식은 `image/png`, Excel 다운로드, PDF, 대량 JSON에서 문제가 될 수 있으므로, **Content-Type 허용 목록 + URI 제외 + `finally copyBodyToResponse()` 구조로 개선하는 것이 적절**합니다.
+
+## 4. 제외 응답
+
+- `RequestFilter`가 `web.xml` 또는 Spring 설정에서 `/*` 또는 해당 URL 패턴에 매핑되어 있다면 **이미지 파일 스트림(`image/png`), 엑셀 다운로드, 파일 다운로드 요청도 필터를 통과합니다.**  
+- 다만 **CDN/Nginx/Apache가 WAS 앞단에서 정적 파일을 직접 응답하는 경우**에는 WAS까지 요청이 오지 않으므로 이 Java Filter를 통과하지 않습니다.  
+- 현재 코드 기준으로는 특히 문제가 큽니다. 이유는 아래 조건 때문입니다.
+
+```java
+if ((contentType == null || !contentType.contains("text/html"))
+    && !uri.contains("/comm/ajax/comm/getDispCategoryAllFront.do")) {
+    responseBody = this.getResponseBody(responseWrapper);
+}
+```
+
+- 이 조건은 `text/html`만 제외하고, `application/json`, `image/png`, `application/vnd.ms-excel`, `application/octet-stream` 등을 대부분 `responseBody`로 읽으려 합니다. `ContentCachingResponseWrapper`는 응답 output stream/writer에 쓰인 content를 캐싱해서 byte array로 조회할 수 있게 하는 wrapper이므로, 이미지/엑셀 같은 바이너리 응답도 캐싱 대상이 될 수 있습니다. 또한 캐시된 응답은 `copyBodyToResponse()`로 실제 response에 복사해야 합니다. ([Home](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/util/ContentCachingResponseWrapper.html?utm_source=chatgpt.com "Class ContentCachingResponseWrapper"))
+
+#### 4-1-1. 통과 여부 판단
+
+|요청 유형|Java Filter 통과 여부|조건|
+|---|--:|---|
+|Controller에서 `image/png` 직접 응답|통과|URL 패턴이 Filter mapping에 포함된 경우|
+|Controller에서 Excel 다운로드 응답|통과|URL 패턴이 Filter mapping에 포함된 경우|
+|Spring `ResourceHandler`로 제공하는 이미지|대체로 통과|Filter가 `/*`에 매핑된 경우|
+|Tomcat DefaultServlet 정적 리소스|통과 가능|Filter가 해당 URL 패턴에 매핑된 경우|
+|Nginx/CDN이 직접 응답하는 이미지|통과 안 함|WAS까지 요청이 오지 않음|
+|`/file/download.do`, `/excel/download.do`|통과|일반적으로 Controller 요청이므로 통과|
+
+Servlet Filter는 URL pattern에 의해 적용되므로, 정적 파일/다운로드 여부 자체가 아니라 **Filter mapping이 해당 요청 URL을 포함하는지**가 기준입니다. Servlet Filter는 URL 패턴을 지정해서 선언되며, `doFilter()`에서 request/response를 감싸거나 다음 filter/servlet으로 제어를 넘길 수 있습니다. ([자카르타 EE](https://jakarta.ee/learn/docs/jakartaee-tutorial/current/web/servlets/servlets.html?utm_source=chatgpt.com "Jakarta Servlet"))
+
+#### 4-1-2. 현재 코드에서 이미지/엑셀 응답이 들어오면 생기는 일
+
+예를 들어 Excel 다운로드 Controller가 아래처럼 응답한다고 가정합니다.
+
+```text
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Content-Disposition: attachment; filename=order.xlsx
+```
+
+현재 필터 흐름은 다음과 같습니다.
+
+```text
+요청 진입
+→ ContentCachingResponseWrapper 생성
+→ Controller가 Excel binary를 response output stream에 write
+→ responseWrapper 내부에 binary body 캐싱
+→ contentType이 text/html이 아니므로 getResponseBody() 실행
+→ binary byte[]를 UTF-8 String으로 변환
+→ 로그에 깨진 문자열 또는 대량 바이너리 출력 시도
+→ copyBodyToResponse()
+```
+
+#### 4-1-3. 문제 가능성
+
+|구분|문제|설명|
+|---|---|---|
+|메모리|대용량 응답 캐싱|Excel/PDF/이미지/ZIP 다운로드를 `ContentCachingResponseWrapper`가 메모리에 보관할 수 있음|
+|성능|다운로드 지연|streaming 응답이 중간 wrapper에 쌓이면서 응답 지연 가능|
+|로그|바이너리 로그 오염|`image/png`, Excel binary를 UTF-8 문자열로 변환하면 깨진 문자/제어문자 출력|
+|용량|로그 폭증|대용량 엑셀/이미지가 로그 파일을 급격히 증가시킬 수 있음|
+|장애|OOM 위험|대용량 파일 다운로드 동시 요청 시 WAS heap 사용량 증가|
+|보안|개인정보 노출|엑셀에 주문자, 수취인, 연락처, 주소, 결제 정보가 포함될 수 있음|
+|응답|`copyBodyToResponse()` 의존|예외 발생 시 복사가 누락되면 다운로드 응답이 깨질 수 있음|
+|관측|장애 분석 오판|binary 응답의 깨진 로그가 실제 오류처럼 보일 수 있음|
+
+#### 4-1-4. 가장 중요한 개선 포인트
+
+단순히 아래처럼 `getResponseBody()`만 안 하는 것은 부족합니다.
+
+```java
+if (!isBinaryContentType(contentType)) {
+    responseBody = getResponseBody(responseWrapper);
+}
+```
+
+이유는 `Content-Type`은 보통 `chain.doFilter()` 이후에 알 수 있고, 그 시점에는 이미 `ContentCachingResponseWrapper`가 응답 body를 캐싱했을 수 있기 때문입니다. 즉, **로그 출력만 생략해도 메모리 캐싱 비용은 이미 발생**할 수 있습니다.  
+따라서 실무 개선은 아래 순서가 맞습니다.
+
+```text
+1. 다운로드/이미지/정적 리소스/엑셀 URL은 필터 자체에서 제외
+2. 최소한 response wrapper 생성 대상에서 제외
+3. JSON/text API만 response body 로깅 대상으로 허용
+4. 운영에서는 body 로그보다 status/elapsed/URI 중심으로 기록
+```
+
+#### 4-1-5. 권장 제외 대상
+
+커머스 프로젝트에서는 아래 요청을 `RequestFilter`의 body logging 대상에서 제외하는 것이 안전합니다.
+
+```text
+/images/*
+/css/*
+/js/*
+/favicon.ico
+/file/*
+/download/*
+/excel/*
+/export/*
+/attach/*
+/common/file/*
+/internal/metrics/*
+/health*
+```
+
+확장자 기준으로도 제외하는 것이 좋습니다.
+
+```text
+.png, .jpg, .jpeg, .gif, .webp, .ico
+.pdf, .xls, .xlsx, .csv, .zip
+.css, .js, .map, .woff, .woff2, .ttf
+```
+
+#### 4-1-6. 최소 수정안
+
+현재 코드 구조를 크게 바꾸지 않는다면, 최소한 `doFilter()` 시작 지점에서 제외 URL은 wrapper 없이 통과시켜야 합니다.
+
+```java
+public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+        throws IOException, ServletException {
+    if (!(request instanceof HttpServletRequest) || !(response instanceof HttpServletResponse)) {
+        chain.doFilter(request, response);
+        return;
+    }
+    HttpServletRequest httpRequest = (HttpServletRequest) request;
+    HttpServletResponse httpResponse = (HttpServletResponse) response;
+    String uri = httpRequest.getRequestURI();
+    if (isExcludedUri(uri)) {
+        chain.doFilter(request, response);
+        return;
+    }
+    ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(httpRequest);
+    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(httpResponse);
+    long start = System.currentTimeMillis();
+    try {
+        chain.doFilter(requestWrapper, responseWrapper);
+        long end = System.currentTimeMillis();
+        if (LOGGER.isDebugEnabled()) {
+            String contentType = responseWrapper.getContentType();
+            String responseBody = shouldLogResponseBody(contentType)
+                    ? this.getResponseBody(responseWrapper)
+                    : " - ";
+            LOGGER.debug(
+                    "\n[REQUEST] {} - {} {} - {}\nHeaders : {}\nRequest : {}\nResponse : {}\n",
+                    requestWrapper.getMethod(),
+                    requestWrapper.getRequestURI(),
+                    responseWrapper.getStatus(),
+                    (double) (end - start) / 1000.0D,
+                    this.getHeaders(requestWrapper),
+                    this.getRequestBody(requestWrapper),
+                    responseBody
+            );
+        }
+    } finally {
+        responseWrapper.copyBodyToResponse();
+    }
+}
+private boolean isExcludedUri(String uri) {
+    if (uri == null) {
+        return true;
+    }
+    String lower = uri.toLowerCase();
+    return lower.contains("/images/")
+            || lower.contains("/image/")
+            || lower.contains("/css/")
+            || lower.contains("/js/")
+            || lower.contains("/file/")
+            || lower.contains("/download")
+            || lower.contains("/excel")
+            || lower.contains("/export")
+            || lower.endsWith(".png")
+            || lower.endsWith(".jpg")
+            || lower.endsWith(".jpeg")
+            || lower.endsWith(".gif")
+            || lower.endsWith(".webp")
+            || lower.endsWith(".ico")
+            || lower.endsWith(".pdf")
+            || lower.endsWith(".xls")
+            || lower.endsWith(".xlsx")
+            || lower.endsWith(".csv")
+            || lower.endsWith(".zip")
+            || lower.endsWith(".css")
+            || lower.endsWith(".js")
+            || lower.endsWith(".map")
+            || lower.endsWith(".woff")
+            || lower.endsWith(".woff2")
+            || lower.endsWith(".ttf");
+}
+private boolean shouldLogResponseBody(String contentType) {
+    if (contentType == null) {
+        return false;
+    }
+    String ct = contentType.toLowerCase();
+    return ct.contains("application/json")
+            || ct.contains("application/xml")
+            || ct.contains("text/plain");
+}
+```
+
+#### 4-1-7. 더 권장하는 개선안: `OncePerRequestFilter` + `shouldNotFilter`
+
+Spring 환경에서는 `javax.servlet.Filter` 직접 구현보다 `OncePerRequestFilter` 기반으로 제외 조건을 명확히 두는 편이 관리하기 좋습니다.
+
+```java
+import java.io.IOException;
+import java.util.Locale;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+public class RequestLoggingFilter extends OncePerRequestFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestLoggingFilter.class);
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return isExcludedUri(uri);
+    }
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain chain
+    ) throws ServletException, IOException {
+        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
+        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
+        long start = System.currentTimeMillis();
+        try {
+            chain.doFilter(requestWrapper, responseWrapper);
+        } finally {
+            long elapsed = System.currentTimeMillis() - start;
+            try {
+                if (LOGGER.isDebugEnabled()) {
+                    String responseBody = shouldLogResponseBody(responseWrapper.getContentType())
+                            ? getResponseBody(responseWrapper)
+                            : " - ";
+                    LOGGER.debug(
+                            "\n[REQUEST] {} {} status={} elapsed={}s\nRequest : {}\nResponse : {}\n",
+                            requestWrapper.getMethod(),
+                            requestWrapper.getRequestURI(),
+                            responseWrapper.getStatus(),
+                            elapsed / 1000.0D,
+                            getRequestBody(requestWrapper),
+                            responseBody
+                    );
+                }
+            } finally {
+                responseWrapper.copyBodyToResponse();
+            }
+        }
+    }
+    private boolean isExcludedUri(String uri) {
+        if (uri == null) {
+            return true;
+        }
+        String lower = uri.toLowerCase(Locale.ROOT);
+        return lower.contains("/images/")
+                || lower.contains("/image/")
+                || lower.contains("/css/")
+                || lower.contains("/js/")
+                || lower.contains("/file/")
+                || lower.contains("/download")
+                || lower.contains("/excel")
+                || lower.contains("/export")
+                || lower.endsWith(".png")
+                || lower.endsWith(".jpg")
+                || lower.endsWith(".jpeg")
+                || lower.endsWith(".gif")
+                || lower.endsWith(".webp")
+                || lower.endsWith(".ico")
+                || lower.endsWith(".pdf")
+                || lower.endsWith(".xls")
+                || lower.endsWith(".xlsx")
+                || lower.endsWith(".csv")
+                || lower.endsWith(".zip")
+                || lower.endsWith(".css")
+                || lower.endsWith(".js")
+                || lower.endsWith(".map")
+                || lower.endsWith(".woff")
+                || lower.endsWith(".woff2")
+                || lower.endsWith(".ttf");
+    }
+    private boolean shouldLogResponseBody(String contentType) {
+        if (contentType == null) {
+            return false;
+        }
+        String ct = contentType.toLowerCase(Locale.ROOT);
+        return ct.contains("application/json")
+                || ct.contains("application/xml")
+                || ct.contains("text/plain");
+    }
+    private String getRequestBody(ContentCachingRequestWrapper request) throws IOException {
+        byte[] buf = request.getContentAsByteArray();
+        if (buf.length == 0) {
+            return " - ";
+        }
+        return new String(buf, request.getCharacterEncoding() == null ? "UTF-8" : request.getCharacterEncoding());
+    }
+    private String getResponseBody(ContentCachingResponseWrapper response) throws IOException {
+        byte[] buf = response.getContentAsByteArray();
+        if (buf.length == 0) {
+            return " - ";
+        }
+        return new String(buf, response.getCharacterEncoding() == null ? "UTF-8" : response.getCharacterEncoding());
+    }
+}
+```
+
+#### 4-1-8. 설정 레벨에서 제외하는 방법
+
+- 가능하면 코드 내부 `if`보다 **filter mapping 자체를 좁히는 것**이 더 안전합니다.
+##### 4-1-8-1. 현재처럼 위험한 방식
+
+```xml
+<filter-mapping>
+    <filter-name>requestFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>
+```
+
+##### 4-1-8-2. 개선 방향
+
+- API URL만 로깅 대상으로 제한합니다.
+
+```xml
+<filter-mapping>
+    <filter-name>requestFilter</filter-name>
+    <url-pattern>*.do</url-pattern>
+</filter-mapping>
+```
+
+- 또는 프로젝트 URL 구조가 명확하면:
+
+```xml
+<filter-mapping>
+    <filter-name>requestFilter</filter-name>
+    <url-pattern>/api/*</url-pattern>
+</filter-mapping>
+```
+
+- 다만 `*.do` 안에도 엑셀 다운로드나 파일 다운로드가 있다면 코드 레벨 제외가 추가로 필요.
+
+#### 4-1-9. 운영 권장 로깅 정책
+
+| 응답 유형             | body 로깅 | 권장 로그                                         |
+| ----------------- | ------: | --------------------------------------------- |
+| JSON API          |  제한적 허용 | URI, status, elapsed, request 일부, response 일부 |
+| text/plain        |  제한적 허용 | 오류 분석 목적만                                     |
+| HTML              |   보통 제외 | URI, status, elapsed                          |
+| image/png         |      제외 | URI, status, elapsed, contentLength           |
+| Excel             |      제외 | URI, status, elapsed, fileName, contentLength |
+| PDF/ZIP           |      제외 | URI, status, elapsed, contentLength           |
+| 정적 리소스            |      제외 | Access log에서 처리                               |
+| Prometheus/health |      제외 | 별도 모니터링                                       |
+
+#### 4-1-10. 검증 방법
+
+##### 4-1-10-1. 필터 통과 여부 로그 확인
+
+필터 시작 지점에 임시 로그를 추가합니다.
+
+```java
+LOGGER.debug("[FILTER_CHECK] uri={}, contentTypeBefore={}", request.getRequestURI(), response.getContentType());
+```
+
+이미지 URL 호출:
+
+```bash
+curl -I http://localhost:8080/images/test.png
+```
+
+엑셀 다운로드 호출:
+
+```bash
+curl -OJ http://localhost:8080/excel/download.do
+```
+
+로그에 `[FILTER_CHECK]`가 찍히면 필터를 통과한 것입니다.
+
+##### 4-1-10-2. wrapper 제외 검증
+
+개선 후에는 이미지/엑셀 다운로드 요청에서 아래 로그가 찍히지 않아야 합니다.
+
+```text
+Response : PK...
+Response : �PNG...
+```
+
+Excel `.xlsx`는 ZIP 기반이라 로그에 `PK`로 시작하는 깨진 문자열이 보일 수 있습니다. PNG는 `�PNG` 또는 제어문자가 보일 수 있습니다. 이런 로그가 보이면 여전히 바이너리 body를 문자열화하고 있는 것입니다.
+
+#### 4-1-11. AA 관점 최종 권고
+
+현재 `RequestFilter`는 `/*` 또는 넓은 URL 패턴에 매핑되어 있다면 이미지/엑셀 다운로드도 통과합니다. 그리고 현재 조건은 `text/html`만 제외하므로, `image/png`, Excel, PDF 같은 바이너리 응답을 캐싱·문자열 변환·로그 출력하려 할 수 있습니다. 운영 커머스 환경에서는 **다운로드/정적 리소스/이미지/엑셀은 필터 자체 또는 response wrapper 생성 대상에서 제외**해야 합니다. 가장 좋은 구조는 `API JSON/text 요청만 body logging 허용`, 나머지는 `URI/status/elapsed/contentLength` 정도만 남기는 방식입니다.
 <details>
   <summary>참고</summary>  
   <pre>
