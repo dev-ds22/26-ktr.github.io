@@ -1,10 +1,8 @@
-정확도: 94%
-
-### JDK 11 + Spring Framework 5.3 → JDK 21 + Spring Framework 6.1 Conversion 전체 판단
+### JDK 11, Spring Framework 5.3을 JDK 21, Spring Framework 6.1 Conversion 전체 판단
 
 현재 구조가 **Spring Framework 5.3 기반의 전통적인 Servlet MVC / XML 설정 / JSP / MyBatis / DBCP2 / JBoss 또는 외부 WAS 배포형 애플리케이션**이라는 전제로 정리합니다. 실제 POM, `web.xml`, WAS 버전, 보안/배치/ORM 사용 여부에 따라 세부 난이도는 달라집니다. 핵심은 단순 JDK 업그레이드가 아니라 **Java EE `javax.*` 기반 애플리케이션을 Jakarta EE `jakarta.*` 기반 애플리케이션으로 바꾸는 전환**입니다. Spring Framework 6.0부터 Jakarta EE 9 수준으로 올라가며 Servlet, JPA, Validation 등이 기존 `javax.*`가 아니라 `jakarta.*` 네임스페이스를 사용합니다. Spring 공식 문서도 Spring 6.0이 Servlet 5.0+, JPA 3.0+ 등 Jakarta EE 9 레벨로 업그레이드되었고, Tomcat 10.1, Jetty 11, Hibernate ORM 6.1과 호환된다고 설명합니다. ([Home](https://docs.spring.io/spring-framework/reference/overview.html "Spring Framework Overview :: Spring Framework"))
 
-```mermaid
+```mermai
 flowchart LR
     A[JDK 11<br/>Spring 5.3<br/>javax 기반] --> B[1차 점검<br/>컴파일/의존성/서버]
     B --> C[JDK 17 이상 전환<br/>중간 검증 권장]
@@ -152,7 +150,7 @@ Spring Framework 6.1 Release Notes에는 JDK 21 및 Virtual Thread와의 전반�
 
 ### 7. Application Architecture 관점 영향도
 
-```mermaid
+```mermai
 flowchart TD
     A[Application Architecture 영향] --> B[Runtime Baseline 변경<br/>JDK 21]
     A --> C[Enterprise API 변경<br/>javax → jakarta]
@@ -412,7 +410,7 @@ Java 21 전환의 1차 목표는 새 문법 도입이 아니라 **기존 기능�
 
 ### 18. Virtual Thread 도입 판단
 
-```mermaid
+```mermai
 flowchart TD
     A[Virtual Thread 검토] --> B{I/O 대기 많은가?}
     B -->|예| C[파일/HTTP/DB 호출 병목 분석]
@@ -529,7 +527,7 @@ JDK 14에서 CMS GC가 제거되었고, JDK 17에서 일부 tracing flag는 Unif
 
 ### 24. 권장 전환 순서
 
-```mermaid
+```mermai
 flowchart TD
     A[0. 현황 분석] --> B[1. JDK 17/21 컴파일 사전 점검]
     B --> C[2. 의존성 트리 분석]
