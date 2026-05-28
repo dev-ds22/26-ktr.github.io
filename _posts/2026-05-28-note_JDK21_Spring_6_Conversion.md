@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: single
 title: "JDK21_Spring_6_Conversion"
 excerpt: "JDK21_Spring_6_Conversion"
 categories:
