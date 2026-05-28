@@ -10,12 +10,14 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-05-28"
-last_modified_at: "2026-05-28 16:29:59 +0900"
+last_modified_at: "2026-05-28 17:05:03 +0900"
 mermaid: true
 ---
 ### 1. JDK 11, Spring Framework 5.3을 JDK 21, Spring Framework 6.1 Conversion 전체 판단
 
-현재 구조가 **Spring Framework 5.3 기반의 전통적인 Servlet MVC / XML 설정 / JSP / MyBatis / DBCP2 / JBoss 또는 외부 WAS 배포형 애플리케이션**이라는 전제로 정리합니다. 실제 POM, `web.xml`, WAS 버전, 보안/배치/ORM 사용 여부에 따라 세부 난이도는 달라집니다. 핵심은 단순 JDK 업그레이드가 아니라 **Java EE `javax.*` 기반 애플리케이션을 Jakarta EE `jakarta.*` 기반 애플리케이션으로 바꾸는 전환**입니다. Spring Framework 6.0부터 Jakarta EE 9 수준으로 올라가며 Servlet, JPA, Validation 등이 기존 `javax.*`가 아니라 `jakarta.*` 네임스페이스를 사용합니다. Spring 공식 문서도 Spring 6.0이 Servlet 5.0+, JPA 3.0+ 등 Jakarta EE 9 레벨로 업그레이드되었고, Tomcat 10.1, Jetty 11, Hibernate ORM 6.1과 호환된다고 설명합니다. ([Home](https://docs.spring.io/spring-framework/reference/overview.html "Spring Framework Overview :: Spring Framework"))
+- 현재 구조가 **Spring Framework 5.3 기반의 전통적인 Servlet MVC / XML 설정 / JSP / MyBatis / DBCP2 / JBoss 또는 외부 WAS 배포형 애플리케이션**이라는 전제로 정리합니다. 실제 POM, `web.xml`, WAS 버전, 보안/배치/ORM 사용 여부에 따라 세부 난이도는 달라집니다. 
+- 핵심은 단순 JDK 업그레이드가 아니라 **Java EE `javax.*` 기반 애플리케이션을 Jakarta EE `jakarta.*` 기반 애플리케이션으로 바꾸는 전환**입니다. Spring Framework 6.0부터 Jakarta EE 9 수준으로 올라가며 Servlet, JPA, Validation 등이 기존 `javax.*`가 아니라 `jakarta.*` 네임스페이스를 사용합니다. 
+- Spring 공식 문서도 Spring 6.0이 Servlet 5.0+, JPA 3.0+ 등 Jakarta EE 9 레벨로 업그레이드되었고, Tomcat 10.1, Jetty 11, Hibernate ORM 6.1과 호환된다고 설명합니다. ([Home](https://docs.spring.io/spring-framework/reference/overview.html "Spring Framework Overview :: Spring Framework"))
 
 {% raw %}
 ```mermaid
