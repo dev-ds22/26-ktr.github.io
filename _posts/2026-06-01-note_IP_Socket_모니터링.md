@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-06-01"
-last_modified_at: "2026-06-01 14:50:37 +0900"
+last_modified_at: "2026-06-01 17:31:32 +0900"
 mermaid: true
 ---
 #### 1. `ss -tanp | grep '192.168.100.50:8080'` 상태별 모니터링 커맨드 3가지

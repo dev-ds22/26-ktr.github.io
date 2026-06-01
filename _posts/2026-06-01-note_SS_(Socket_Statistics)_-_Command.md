@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-06-01"
-last_modified_at: "2026-06-01 14:50:33 +0900"
+last_modified_at: "2026-06-01 17:31:17 +0900"
 mermaid: false
 ---
 리눅스 및 유닉스 환경에서 네트워크 상태를 점검할 때 필수적으로 자리를 잡은 **`ss -tan`** 커맨드의 명확한 의미와 용도, 그리고 실무에서 함께 자주 쓰이는 네트워크 추천 커맨드 5개를 정리해 드립니다.
@@ -82,6 +82,11 @@ mermaid: false
 - **명령어:** `sudo tcpdump -i eth0 port 8080 -Xvv`
 
 - **용도:** "소켓 연결은 맺어졌는데 왜 데이터 응답이 안 올까?"를 분석할 때, 실제로 네트워크 레벨에서 요청과 응답(Request/Response) 패킷이 정상적으로 오가고 있는지 날것(Raw)의 데이터를 확인할 때 쓰는 가장 강력한 트러블슈팅 툴입니다.
+
+## 4. 참고 - WAS Socket 모니터링
+```bash
+watch -n 3 "date '+%Y-%m-%d %H:%M:%S'; ss -Hant '( dport = :3306 )' | awk '{ state=\$1; peer=\$5; sub(/:[0-9]+$/, \"\", peer); gsub(/^\\[::ffff:/, \"\", peer); gsub(/^\\[/, \"\", peer); gsub(/\\]$/, \"\", peer); cnt[peer, state]++; total[peer]++; stateTotal[state]++; grand++; } END { printf \"%-18s %8s %10s %12s %10s %10s %10s\\n\", \"DB_SERVER\", \"ESTAB\", \"TIME_WAIT\", \"CLOSE_WAIT\", \"LAST_ACK\", \"SYN_SENT\", \"TOTAL\"; for (p in total) { printf \"%-18s %8d %10d %12d %10d %10d %10d\\n\", p, cnt[p, \"ESTAB\"], cnt[p, \"TIME-WAIT\"], cnt[p, \"CLOSE-WAIT\"], cnt[p, \"LAST-ACK\"], cnt[p, \"SYN-SENT\"], total[p]; } printf \"%-18s %8d %10d %12d %10d %10d %10d\\n\", \"TOTAL\", stateTotal[\"ESTAB\"], stateTotal[\"TIME-WAIT\"], stateTotal[\"CLOSE-WAIT\"], stateTotal[\"LAST-ACK\"], stateTotal[\"SYN-SENT\"], grand; }'"
+```
 <details>
   <summary>참고</summary>  
   <pre>
