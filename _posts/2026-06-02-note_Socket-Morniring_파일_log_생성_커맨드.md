@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-06-02"
-last_modified_at: "2026-06-02 11:38:39 +0900"
+last_modified_at: "2026-06-02 17:55:54 +0900"
 mermaid: false
 ---
 ## 1. watch 모니터링을 log 파일 생성으로 변경
