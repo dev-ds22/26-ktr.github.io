@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-06-04"
-last_modified_at: "2026-06-04 13:31:29 +0900"
+last_modified_at: "2026-06-04 17:58:20 +0900"
 mermaid: false
 ---
 커넥션 풀(Connection Pool)의 상태를 정확히 파악하려면, 소켓들이 실제로 재사용되고 있는지(`ESTABLISHED` 상태 유지), 아니면 계속 끊어지고 새로 생성되는지(`TIME_WAIT` 폭증)를 모니터링하는 것이 매우 중요합니다.
