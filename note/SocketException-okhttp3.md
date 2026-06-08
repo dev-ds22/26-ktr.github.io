@@ -135,13 +135,13 @@ private SearchCommRespVO sendSearch(SearchCommReqVO searchVo) throws Exception {
 다만 현재 코드는 `Response`를 명시적으로 닫지 않습니다. OkHttp 공식 문서에서도 `ResponseBody`는 Socket 같은 제한된 리소스를 사용하므로 반드시 닫아야 하며, 닫지 않으면 리소스 누수로 애플리케이션이 느려지거나 장애로 이어질 수 있다고 설명합니다. 동기 호출에서는 `try (Response response = call.execute())` 구조가 권장됩니다. ([Square Open Source](https://square.github.io/okhttp/3.x/okhttp/okhttp3/ResponseBody.html "ResponseBody (OkHttp 3.14.0 API)"))  
 주의할 점은 `response.body().string()` 자체는 body를 소비하면서 close까지 수행하는 메서드 목록에 포함됩니다. 그러나 아래 경우에는 여전히 문제가 남습니다.
 
-|경우|문제|
-|--:|---|
-|`execute()` 성공 후 `body()`가 null|`response.body().string()`에서 NPE|
-|`execute()` 성공 후 `string()` 전에 예외|close 누락 가능|
-|HTTP 오류 응답인데 body 파싱 실패|close 경로가 불명확|
-|향후 코드 수정으로 `string()` 대신 stream 사용|close 누락 위험 증가|
-|따라서 실무에서는 **`try-with-resources`로 `Response` 전체를 닫는 방식이 안전합니다.**||
+|                                                               경우 | 문제                               |
+| ---------------------------------------------------------------: | -------------------------------- |
+|                                  `execute()` 성공 후 `body()`가 null | `response.body().string()`에서 NPE |
+|                                `execute()` 성공 후 `string()` 전에 예외 | close 누락 가능                      |
+|                                          HTTP 오류 응답인데 body 파싱 실패 | close 경로가 불명확                    |
+|                               향후 코드 수정으로 `string()` 대신 stream 사용 | close 누락 위험 증가                   |
+| 따라서 실무에서는 **`try-with-resources`로 `Response` 전체를 닫는 방식이 안전합니다.** |                                  |
 
 #### 4. 발생 가능 원인
 
@@ -149,14 +149,14 @@ private SearchCommRespVO sendSearch(SearchCommReqVO searchVo) throws Exception {
 
 가장 가능성이 큽니다.
 
-|원인|설명|
-|--:|---|
-|API 서버 응답 지연|WAS가 응답 헤더를 기다리는 중 상대가 연결 종료|
-|API 서버 재기동|요청 처리 중 검색 서버 재시작 또는 배포|
-|L4/LB/Proxy idle timeout|중간 장비가 먼저 TCP 연결 종료|
-|방화벽 세션 정리|장시간 idle 또는 비정상 세션으로 판단하여 종료|
-|검색 서버 Keep-Alive 정책|서버가 Keep-Alive 연결을 닫았는데 클라이언트가 통신 시도|
-|StackTrace가 `readResponseHeaders()`에서 끊기므로, **요청은 나갔고 응답을 받는 초입에서 연결이 닫힌 상황**으로 보는 것이 자연스럽습니다.||
+|                                                                                             원인 | 설명                                   |
+| ---------------------------------------------------------------------------------------------: | ------------------------------------ |
+|                                                                                   API 서버 응답 지연 | WAS가 응답 헤더를 기다리는 중 상대가 연결 종료         |
+|                                                                                     API 서버 재기동 | 요청 처리 중 검색 서버 재시작 또는 배포              |
+|                                                                       L4/LB/Proxy idle timeout | 중간 장비가 먼저 TCP 연결 종료                  |
+|                                                                                      방화벽 세션 정리 | 장시간 idle 또는 비정상 세션으로 판단하여 종료         |
+|                                                                            검색 서버 Keep-Alive 정책 | 서버가 Keep-Alive 연결을 닫았는데 클라이언트가 통신 시도 |
+| StackTrace가 `readResponseHeaders()`에서 끊기므로, **요청은 나갔고 응답을 받는 초입에서 연결이 닫힌 상황**으로 보는 것이 자연스럽습니다. |                                      |
 
 ##### 4-2. `OkHttpClient`를 매번 생성하여 연결 관리가 비효율적임
 
