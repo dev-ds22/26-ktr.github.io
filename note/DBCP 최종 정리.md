@@ -101,14 +101,14 @@ Apache DBCP 공식 설정 문서에서도 `timeBetweenEvictionRunsMillis`는 idl
 
 ### 1. 핵심 결론
 
-|구분|핵심|
-|---|---|
-|`testWhileIdle=true`|Evictor가 검사 대상으로 선택한 idle Connection에 대해 validation 수행|
-|Evictor 실행 조건|`timeBetweenEvictionRunsMillis > 0`이어야 함|
-|검사 대상 수|Evictor 1회 실행 시 `numTestsPerEvictionRun` 기준|
-|오래된 idle 제거|`minEvictableIdleTimeMillis`, `softMinEvictableIdleTimeMillis`가 담당|
-|최소 idle 유지|`minIdle`은 Evictor 주기에서 보충 동작과 soft eviction 판단에 영향|
-|abandoned 회수|`removeAbandonedOnMaintenance=true`이면 Evictor maintenance cycle 이후 active Connection 중 장기 미반납 Connection 회수 가능|
+| 구분                   | 핵심                                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `testWhileIdle=true` | Evictor가 검사 대상으로 선택한 idle Connection에 대해 validation 수행                                                         |
+| Evictor 실행 조건        | `timeBetweenEvictionRunsMillis > 0`이어야 함                                                                       |
+| 검사 대상 수              | Evictor 1회 실행 시 `numTestsPerEvictionRun` 기준                                                                    |
+| 오래된 idle 제거          | `minEvictableIdleTimeMillis`, `softMinEvictableIdleTimeMillis`가 담당                                             |
+| 최소 idle 유지           | `minIdle`은 Evictor 주기에서 보충 동작과 soft eviction 판단에 영향                                                            |
+| abandoned 회수         | `removeAbandonedOnMaintenance=true`이면 Evictor maintenance cycle 이후 active Connection 중 장기 미반납 Connection 회수 가능 |
 
 Apache DBCP 공식 설정상 `testWhileIdle`은 idle object evictor가 Connection을 검증할지 여부이며, `timeBetweenEvictionRunsMillis`가 0 이하이면 Evictor 자체가 실행되지 않습니다. ([Apache Commons](https://commons.apache.org/dbcp/configuration.html "BasicDataSource Configuration – Apache Commons DBCP"))
 
