@@ -107,13 +107,13 @@ java.sql.SQLNonTransientConnectionException: Connection reset by peer
 
 #### 개선 설정 방향
 
-| 설정 | 방향 | 기대 효과 |
-|---|---|---|
-| `testWhileIdle` | 활성화 | idle connection 주기적 검증 |
-| `timeBetweenEvictionRunsMillis` | 120초 수준 | DB/L4 timeout 전 검증 |
-| `numTestsPerEvictionRun` | 증가 | Pool 내 연결 검사 누락 감소 |
-| `minEvictableIdleTimeMillis` | 180초 수준 | 오래된 idle connection 선제 폐기 |
-| `validationQueryTimeout` | 3초 수준 | 검증 쿼리 장기 점유 방지 |
+| 설정                              | 방향      | 기대 효과                     |
+| ------------------------------- | ------- | ------------------------- |
+| `testWhileIdle`                 | 활성화     | idle connection 주기적 검증    |
+| `timeBetweenEvictionRunsMillis` | 120초 수준 | DB/L4 timeout 전 검증        |
+| `numTestsPerEvictionRun`        | 증가      | Pool 내 연결 검사 누락 감소        |
+| `minEvictableIdleTimeMillis`    | 180초 수준 | 오래된 idle connection 선제 폐기 |
+| `validationQueryTimeout`        | 3초 수준   | 검증 쿼리 장기 점유 방지            |
 
 > 발표 포인트: “DB 연결은 오래 들고 있는 것이 안정적인 게 아니라, 죽은 연결을 빨리 발견하고 교체하는 것이 안정적입니다.”
 
