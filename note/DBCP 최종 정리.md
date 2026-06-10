@@ -1,3 +1,82 @@
+
+## MaxTotal 의 정확한 의미
+### 결론
+
+**정상적인 단일 DBCP2 `BasicDataSource` 기준으로는 `maxTotal` 이상의 Connection은 동시에 할당되지 않습니다.**  
+`maxTotal`은 “해당 풀에서 동시에 할당 가능한 최대 active connection 수”이며, 음수로 설정하면 제한이 없어집니다. Apache Commons DBCP 공식 설정에서도 `maxTotal`은 기본값 8이고, 동시에 할당 가능한 active connection 최대치라고 설명합니다. ([Apache Commons](https://commons.apache.org/dbcp/configuration.html "BasicDataSource Configuration – Apache Commons DBCP"))
+
+### 동작 흐름
+
+```mermaid
+flowchart TD
+A[Service에서 DB Connection 요청] --> B{Idle Connection 있음?}
+B -->|Yes| C[Idle Connection 대여]
+B -->|No| D{현재 Active 수 < maxTotal?}
+D -->|Yes| E[신규 Physical Connection 생성 후 대여]
+D -->|No| F[maxWaitMillis 동안 대기]
+F --> G{반납된 Connection 있음?}
+G -->|Yes| C
+G -->|No| H[Connection 획득 실패 예외 발생]
+```
+
+### 핵심 정리
+
+|구분|설명|
+|---|---|
+|`maxTotal=100`|해당 DBCP 풀에서 동시에 대여 가능한 Connection 최대 100개|
+|100개 모두 사용 중|101번째 요청은 신규 Connection을 만들지 않고 대기|
+|`maxWaitMillis` 초과|Connection 획득 실패 예외 발생|
+|`maxTotal=-1`|제한 없음. 운영 환경에서는 위험|
+|`maxIdle=20`|반납 후 idle 상태로 유지 가능한 최대 수. 초과 idle은 반환 시 닫힐 수 있음|
+|`maxWaitMillis`는 사용 가능한 Connection이 없을 때 풀에서 기다리는 최대 시간이며, 시간이 지나면 예외를 던집니다. `maxIdle`은 idle 상태로 풀에 남아 있을 수 있는 Connection 수를 제한하며, 초과분은 반환 시 release될 수 있습니다. ([Apache Commons](https://commons.apache.org/dbcp/configuration.html "BasicDataSource Configuration – Apache Commons DBCP"))||
+
+### 단, “maxTotal 초과처럼 보이는” 경우
+
+|관측 상황|실제 의미|
+|---|---|
+|DB `processlist`가 `maxTotal`보다 많음|여러 `DataSource`, 여러 WAS 인스턴스, 관리자 접속, 배치/별도 프로그램 접속 포함 가능|
+|`dataSource`와 `dataSourceMail`이 각각 있음|각 풀마다 `maxTotal`이 별도 적용됨. 예: Main 100 + Mail 10 = 최대 110|
+|Spring Root Context와 Servlet Context에 DataSource가 중복 생성됨|같은 설정처럼 보여도 실제 풀은 2개일 수 있음|
+|OS `ss`에서 `TIME-WAIT`, `LAST-ACK`, `CLOSE-WAIT`까지 카운트|`maxTotal`은 현재 풀에서 대여 가능한 JDBC Connection 기준이지, 종료 중이거나 과거에 닫힌 TCP 소켓 상태까지 제한하는 값은 아님|
+|`maxIdle`이 낮음|부하 후 반납된 Connection이 닫히고 곧바로 새로 열려 생성/종료가 빈번해질 수 있음|
+
+### KTR 프로젝트 기준 판단
+
+현재처럼 Main DB `maxTotal=100`, Mail DB `maxTotal=10`이면 다음과 같이 봐야 합니다.
+
+|항목|최대 Connection|
+|---|--:|
+|Main DB Pool|100|
+|Mail DB Pool|10|
+|동일 WAS 1대 기준 합계|최대 110|
+|WAS 2대 운영 시|최대 220|
+|따라서 DB 서버에서 100개를 초과하는 세션이 보인다고 해서 바로 DBCP `maxTotal` 위반은 아닙니다. **풀 단위, WAS 인스턴스 단위, DataSource 단위로 나눠서 봐야 합니다.**||
+
+### 확인 방법
+
+```java
+BasicDataSource ds = (BasicDataSource) dataSource;
+log.info("maxTotal={}, numActive={}, numIdle={}",
+    ds.getMaxTotal(),
+    ds.getNumActive(),
+    ds.getNumIdle()
+);
+```
+
+운영 확인 기준은 다음이 가장 정확합니다.
+
+|확인값|판단 기준|
+|---|---|
+|`numActive`|현재 Business Logic에 대여된 Connection 수|
+|`numIdle`|풀 안에 놀고 있는 Connection 수|
+|`numActive + numIdle`|해당 DBCP 풀 내부에서 관리 중인 Connection 규모|
+|DB `processlist`|전체 DB 접속 세션이므로 다른 풀/다른 서버/툴 접속까지 포함|
+
+### 최종 답변
+
+**예. 정상적인 단일 DBCP2 Pool에서는 `maxTotal` 이상의 Connection을 동시에 생성·대여하지 않습니다.**  
+다만 DB나 OS에서 보이는 Connection 수가 `maxTotal`보다 많다면, 대부분은 **복수 DataSource, 복수 WAS, 중복 ApplicationContext, 별도 배치/관리자 접속, 또는 종료 중인 TCP 소켓 상태까지 함께 집계했기 때문**입니다.
+
 ## 결론
 
 `minEvictableIdleTimeMillis`는 **Connection이 idle 상태가 된 순간부터 계속 타이머처럼 상시 감시되는 값이 아닙니다.**  
@@ -16,6 +95,8 @@
 Apache DBCP 공식 설정 문서에서도 `timeBetweenEvictionRunsMillis`는 idle object evictor thread의 실행 간격이고, `numTestsPerEvictionRun`은 Evictor 1회 실행 시 검사할 object 수이며, `minEvictableIdleTimeMillis`는 idle object evictor에 의해 제거 대상이 될 수 있는 최소 idle 시간으로 설명합니다. ([Apache Commons](https://commons.apache.org/dbcp/configuration.html "BasicDataSource Configuration – Apache Commons DBCP"))
 
 
+
+## Evictor 과 testWhileIdle 의 관계
 ## DBCP `testWhileIdle=true` 관련 옵션과 Evictor 관련 옵션 정리
 
 ### 1. 핵심 결론
