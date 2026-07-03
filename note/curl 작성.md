@@ -1,0 +1,610 @@
+### 서버 `curl` 호출 커맨드
+
+#### 1. 부서 정보 조회 API 호출
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{
+    "DATA": {
+      "IF_ID": "IF_HR_SELECT_STANDARD_DEPT",
+      "USER_ID": "BUY",
+      "SECRET_KEY": "4B15rieureirueiui"
+    }
+  }'
+```
+
+#### 2. 직원 정보 조회 API 호출
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{
+    "DATA": {
+      "IF_ID": "IF_HR_SELECT_STANDARD_EMPL",
+      "USER_ID": "BUY",
+      "SECRET_KEY": "4B15rieureirueiui"
+    }
+  }'
+```
+
+#### 3. CRM 조회 API 호출
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{
+    "DATA": {
+      "IF_ID": "IF_CRM_SELECT",
+      "USER_ID": "BUY",
+      "SECRET_KEY": "4B15rieureirueiui"
+    }
+  }'
+```
+
+### 한 줄 커맨드
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" -H "Content-Type: application/json; charset=UTF-8" --connect-timeout 5 --max-time 20 -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}'
+```
+
+### 응답을 파일로 저장
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' \
+  -o esb_dept_response.json
+```
+
+### 응답 Header 포함 확인
+
+```bash
+curl -i -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}'
+```
+
+### 서버에서 보기 좋게 출력
+
+`jq`가 설치되어 있으면 다음처럼 확인할 수 있습니다.
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' | jq
+```
+
+### 소스 기준 요청 구조
+
+|항목|값|
+|---|---|
+|Method|`POST`|
+|URL|`http://1111.333.222.111:1111/aaa/rou`|
+|Content-Type|`application/json; charset=UTF-8`|
+|Read Timeout|Java 기준 `20000ms`|
+|요청 Body Root|`DATA`|
+|IF_ID|`IF_HR_SELECT_STANDARD_DEPT`, `IF_HR_SELECT_STANDARD_EMPL`, `IF_CRM_SELECT`|
+|USER_ID|`BUY`|
+|SECRET_KEY|`4B15rieureirueiui`|
+
+### QUERY1 포함 호출 예시
+
+소스의 두 번째 `requestEsb(String ifId, String query, List<Map<String,Object>> recordList)` 구조 기준으로 `QUERY1`을 포함하려면 Body는 다음과 같습니다.
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{
+    "DATA": {
+      "IF_ID": "IF_CRM_SELECT",
+      "USER_ID": "BUY",
+      "SECRET_KEY": "4B15rieureirueiui",
+      "QUERY1": "SELECT * FROM SAMPLE_TABLE"
+    }
+  }'
+```
+
+단, 첨부 소스의 두 번째 메서드는 현재 아래처럼 하드코딩되어 있어 실제 설정값을 사용하지 않습니다.
+
+```java
+data.put("USER_ID", "user_id");
+data.put("SECRET_KEY","secret_key");
+URL url = new URL("domain");
+```
+
+따라서 실제 서버 호출용으로는 첫 번째 메서드 기준의 `USER_ID=BUY`, `SECRET_KEY=4B15rieureirueiui`, `domain=http://1111.333.222.111:1111/aaa/rou` 조합을 사용해야 합니다.
+
+### 권장 테스트 순서
+
+```bash
+# 1. 네트워크 연결 확인
+curl -v --connect-timeout 5 "http://1111.333.222.111:1111/aaa/rou"
+
+# 2. 부서 IF 호출
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}'
+
+# 3. 직원 IF 호출
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_EMPL","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}'
+```
+
+운영 서버에서 실행할 경우 `SECRET_KEY`가 shell history, 로그, APM, 명령어 이력에 남을 수 있으므로 테스트 후 `history -d` 또는 별도 `.json` 파일 권한 제한 방식 사용을 권장합니다.
+
+
+### jq의 역할
+
+`jq`는 서버에서 `curl`로 호출한 API 응답 JSON을 보기 좋게 출력하거나, 필요한 값만 추출·검증·가공할 때 사용하는 CLI 도구입니다.
+
+|구분|설명|예시|
+|---|---|---|
+|JSON Pretty Print|한 줄 JSON을 들여쓰기된 구조로 출력|`curl ... \| jq`|
+|특정 필드 추출|응답 JSON에서 필요한 값만 출력|`jq '.DATA.USER_ID'`|
+|배열 처리|JSON 배열의 각 항목 조회|`jq '.RECORD[]'`|
+|조건 필터링|특정 조건에 맞는 데이터만 추출|`jq '.RECORD[] \| select(.USE_YN=="Y")'`|
+|건수 확인|배열 길이 확인|`jq '.RECORD \| length'`|
+|Shell 연계|추출 값을 변수로 저장 후 다음 명령에 사용|`TOKEN=$(curl ... \| jq -r '.token')`|
+
+### jq 기본 사용법
+
+#### 1. JSON 보기 좋게 출력
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' | jq
+```
+
+#### 2. 특정 필드만 추출
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' \
+| jq '.RECORD'
+```
+
+#### 3. 배열의 첫 번째 데이터 조회
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' \
+| jq '.RECORD[0]'
+```
+
+#### 4. 배열 건수 확인
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' \
+| jq '.RECORD | length'
+```
+
+#### 5. 쌍따옴표 없이 값만 추출
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' \
+| jq -r '.RESULT_CODE'
+```
+
+`-r` 옵션은 `"SUCCESS"`처럼 따옴표가 붙은 JSON 문자열을 `SUCCESS`처럼 순수 문자열로 출력할 때 사용합니다.
+
+### curl의 역할
+
+`curl`은 서버에서 HTTP API를 직접 호출하기 위한 CLI 도구입니다. 브라우저나 Java 프로그램을 거치지 않고 서버 간 API 통신을 테스트할 때 가장 많이 사용합니다.
+
+|용도|설명|
+|---|---|
+|API 단독 테스트|WAS 소스 실행 없이 외부 API 호출 가능|
+|네트워크 확인|방화벽, 라우팅, DNS, 포트 접근 가능 여부 확인|
+|HTTP 상태 확인|`200`, `400`, `401`, `404`, `500`, `502` 등 응답 확인|
+|Header 확인|Content-Type, Authorization, Cookie 등 확인|
+|응답 저장|API 응답을 파일로 저장하여 분석|
+|장애 분석|timeout, connection refused, SSL 오류, proxy 오류 확인|
+
+### curl 기본 구조
+
+```bash
+curl [옵션] [URL]
+```
+
+### 실무에서 많이 쓰는 curl 옵션
+
+|옵션|의미|실무 사용 목적|
+|---|---|---|
+|`-X`|HTTP Method 지정|`GET`, `POST`, `PUT`, `DELETE` 지정|
+|`-H`|Request Header 지정|`Content-Type`, `Authorization` 설정|
+|`-d`|Request Body 전송|JSON, form data 전송|
+|`-v`|상세 로그 출력|연결 과정, 요청/응답 Header 확인|
+|`-i`|응답 Header 포함 출력|HTTP 상태와 Header 확인|
+|`-s`|진행 로그 숨김|스크립트에서 깔끔하게 사용|
+|`-o`|응답을 파일로 저장|결과 JSON, 파일 다운로드|
+|`-w`|응답 코드/시간 출력|모니터링, 성능 확인|
+|`--connect-timeout`|연결 타임아웃|TCP 연결 지연 방지|
+|`--max-time`|전체 요청 타임아웃|API 응답 지연 방지|
+|`-k`|SSL 인증서 검증 무시|개발/테스트 서버 HTTPS 인증서 오류 회피|
+|`-u`|Basic 인증|ID/PW 기반 API 호출|
+
+### curl 작성 기본방법
+
+#### 1. GET 호출
+
+```bash
+curl -v "http://example.com/api/users"
+```
+
+#### 2. GET 호출 + Query String
+
+```bash
+curl -v "http://example.com/api/users?deptId=100&useYn=Y"
+```
+
+#### 3. POST JSON 호출
+
+```bash
+curl -v -X POST "http://example.com/api/users" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"userId":"test01","userName":"홍길동"}'
+```
+
+#### 4. Header 포함 응답 확인
+
+```bash
+curl -i -X POST "http://example.com/api/users" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"userId":"test01"}'
+```
+
+#### 5. 응답 Body만 조용히 확인
+
+```bash
+curl -s -X POST "http://example.com/api/users" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"userId":"test01"}'
+```
+
+#### 6. 응답을 JSON 파일로 저장
+
+```bash
+curl -s -X POST "http://example.com/api/users" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"userId":"test01"}' \
+  -o response.json
+```
+
+#### 7. 응답을 jq로 보기 좋게 출력
+
+```bash
+curl -s -X POST "http://example.com/api/users" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"userId":"test01"}' | jq
+```
+
+### ESB API 호출 실무 예제
+
+#### 1. 부서 IF 호출
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}'
+```
+
+#### 2. 직원 IF 호출
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_EMPL","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}'
+```
+
+#### 3. CRM IF 호출
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_CRM_SELECT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}'
+```
+
+#### 4. 응답을 jq로 정리해서 확인
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' | jq
+```
+
+#### 5. RECORD 배열만 확인
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' \
+| jq '.RECORD'
+```
+
+#### 6. RECORD 건수 확인
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d '{"DATA":{"IF_ID":"IF_HR_SELECT_STANDARD_DEPT","USER_ID":"BUY","SECRET_KEY":"4B15rieureirueiui"}}' \
+| jq '.RECORD | length'
+```
+
+### 실무에서 자주 쓰는 curl 패턴
+
+#### 1. HTTP Status Code만 확인
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" "http://example.com/api/health"
+```
+
+|출력|의미|
+|---|---|
+|`200`|정상|
+|`400`|요청 파라미터 오류|
+|`401`|인증 실패|
+|`403`|권한 없음|
+|`404`|URL 없음|
+|`500`|API 서버 내부 오류|
+|`502`|Gateway 또는 Proxy 계층 오류|
+|`504`|Gateway Timeout|
+
+#### 2. 응답 시간 확인
+
+```bash
+curl -s -o /dev/null \
+  -w "http_code=%{http_code} total_time=%{time_total} connect_time=%{time_connect}\n" \
+  "http://example.com/api/health"
+```
+
+#### 3. 상세 연결 로그 확인
+
+```bash
+curl -v "http://example.com/api/health"
+```
+
+`-v` 사용 시 다음 정보를 확인할 수 있습니다.
+
+|항목|확인 가능 내용|
+|---|---|
+|TCP 연결|서버 IP, 포트 연결 여부|
+|Request Header|Host, User-Agent, Content-Type|
+|Response Header|Status, Server, Content-Type|
+|장애 원인|Connection refused, timeout, SSL 오류 등|
+
+#### 4. Header만 확인
+
+```bash
+curl -I "http://example.com/api/health"
+```
+
+`GET` Body 없이 Header만 확인합니다. 단, 서버가 `HEAD` Method를 지원하지 않으면 실패할 수 있습니다.
+
+#### 5. Authorization Bearer Token 호출
+
+```bash
+curl -v -X GET "http://example.com/api/users" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}"
+```
+
+#### 6. Basic 인증 호출
+
+```bash
+curl -v -u "user01:password01" "http://example.com/api/users"
+```
+
+#### 7. Form 데이터 전송
+
+```bash
+curl -v -X POST "http://example.com/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "userId=test01&password=pass01"
+```
+
+#### 8. 파일 업로드
+
+```bash
+curl -v -X POST "http://example.com/api/upload" \
+  -F "file=@/tmp/sample.xlsx" \
+  -F "userId=test01"
+```
+
+#### 9. Cookie 포함 호출
+
+```bash
+curl -v "http://example.com/api/mypage" \
+  -H "Cookie: JSESSIONID=ABCDEF1234567890"
+```
+
+#### 10. Redirect 따라가기
+
+```bash
+curl -L "http://example.com/login"
+```
+
+`-L`은 `301`, `302`, `303` Redirect 응답을 따라가도록 합니다.
+
+### 요청 Body를 파일로 분리하는 방법
+
+긴 JSON은 커맨드에 직접 쓰지 말고 파일로 분리하는 것이 좋습니다.
+
+#### 1. 요청 JSON 파일 생성
+
+```bash
+cat > esb_dept_request.json <<'EOF'
+{
+  "DATA": {
+    "IF_ID": "IF_HR_SELECT_STANDARD_DEPT",
+    "USER_ID": "BUY",
+    "SECRET_KEY": "4B15rieureirueiui"
+  }
+}
+EOF
+```
+
+#### 2. 파일을 Body로 전송
+
+```bash
+curl -v -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d @esb_dept_request.json
+```
+
+#### 3. 응답 저장
+
+```bash
+curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d @esb_dept_request.json \
+  -o esb_dept_response.json
+```
+
+#### 4. 저장된 응답 확인
+
+```bash
+cat esb_dept_response.json | jq
+```
+
+### 운영 서버 실무 권장 방식
+
+|항목|권장|
+|---|---|
+|`-v`|장애 분석 시 사용, 운영 로그 공유 시 Secret 노출 주의|
+|`-s`|스크립트/배치에서 사용|
+|`--connect-timeout`|반드시 지정 권장|
+|`--max-time`|반드시 지정 권장|
+|요청 JSON|파일 분리 권장|
+|Secret Key|명령어 직접 입력보다 환경변수 또는 파일 권한 제한 권장|
+|응답 저장|장애 분석 시 `-o response.json` 사용|
+|JSON 확인|`jq` 사용|
+
+### Secret Key 노출 방지 방식
+
+#### 1. 환경변수 사용
+
+```bash
+export ESB_URL="http://1111.333.222.111:1111/aaa/rou"
+export ESB_USER_ID="BUY"
+export ESB_SECRET_KEY="4B15rieureirueiui"
+```
+
+```bash
+curl -s -X POST "$ESB_URL" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d "{\"DATA\":{\"IF_ID\":\"IF_HR_SELECT_STANDARD_DEPT\",\"USER_ID\":\"$ESB_USER_ID\",\"SECRET_KEY\":\"$ESB_SECRET_KEY\"}}" | jq
+```
+
+#### 2. 명령어 이력 삭제
+
+```bash
+history | grep SECRET_KEY
+```
+
+```bash
+history -d [이력번호]
+```
+
+또는 테스트 전 임시로 history 저장을 끌 수 있습니다.
+
+```bash
+set +o history
+```
+
+테스트 후 다시 활성화합니다.
+
+```bash
+set -o history
+```
+
+### curl + jq 실무 점검용 스크립트 예제
+
+```bash
+#!/bin/bash
+ESB_URL="http://1111.333.222.111:1111/aaa/rou"
+IF_ID="IF_HR_SELECT_STANDARD_DEPT"
+USER_ID="BUY"
+SECRET_KEY="4B15rieureirueiui"
+
+RESPONSE=$(curl -s -X POST "$ESB_URL" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  --connect-timeout 5 \
+  --max-time 20 \
+  -d "{\"DATA\":{\"IF_ID\":\"$IF_ID\",\"USER_ID\":\"$USER_ID\",\"SECRET_KEY\":\"$SECRET_KEY\"}}")
+
+echo "$RESPONSE" | jq
+
+RECORD_COUNT=$(echo "$RESPONSE" | jq '.RECORD | length')
+
+echo "RECORD_COUNT=$RECORD_COUNT"
+```
+
+### 장애 분석 시 확인 순서
+
+|순서|확인 항목|명령어|
+|--:|---|---|
+|1|서버 접근 가능 여부|`curl -v http://host:port/path`|
+|2|HTTP Status 확인|`curl -s -o /dev/null -w "%{http_code}\n" URL`|
+|3|Header 확인|`curl -i URL`|
+|4|POST Body 확인|`curl -v -X POST ... -d '...'`|
+|5|응답 JSON 구조 확인|`curl -s ... \| jq`|
+|6|필수 필드 존재 확인|`jq '.RECORD'`, `jq '.RESULT_CODE'`|
+|7|응답시간 확인|`curl -w "%{time_total}"`|
+
+### 핵심 정리
+
+| 도구             | 핵심 역할                              |
+| -------------- | ---------------------------------- |
+| `curl`         | HTTP API를 서버에서 직접 호출하는 도구          |
+| `jq`           | JSON 응답을 보기 좋게 출력하고 필요한 값만 추출하는 도구 |
+| `curl -v`      | 연결·Header·장애 원인 확인                 |
+| `curl -s`      | 스크립트에서 조용히 실행                      |
+| `curl -i`      | 응답 Header 포함 확인                    |
+| `curl -o`      | 응답 파일 저장                           |
+| `jq '.'`       | 전체 JSON Pretty Print               |
+| `jq '.RECORD'` | 특정 필드 조회                           |
+| `jq -r`        | 문자열 따옴표 제거 출력                      |
