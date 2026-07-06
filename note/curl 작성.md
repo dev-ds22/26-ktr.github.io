@@ -89,16 +89,16 @@ curl -s -X POST "http://1111.333.222.111:1111/aaa/rou" \
 
 ### 소스 기준 요청 구조
 
-|항목|값|
-|---|---|
-|Method|`POST`|
-|URL|`http://1111.333.222.111:1111/aaa/rou`|
-|Content-Type|`application/json; charset=UTF-8`|
-|Read Timeout|Java 기준 `20000ms`|
-|요청 Body Root|`DATA`|
-|IF_ID|`IF_HR_SELECT_STANDARD_DEPT`, `IF_HR_SELECT_STANDARD_EMPL`, `IF_CRM_SELECT`|
-|USER_ID|`BUY`|
-|SECRET_KEY|`4B15rieureirueiui`|
+| 항목           | 값                                                                           |
+| ------------ | --------------------------------------------------------------------------- |
+| Method       | `POST`                                                                      |
+| URL          | `http://1111.333.222.111:1111/aaa/rou`                                      |
+| Content-Type | `application/json; charset=UTF-8`                                           |
+| Read Timeout | Java 기준 `20000ms`                                                           |
+| 요청 Body Root | `DATA`                                                                      |
+| IF_ID        | `IF_HR_SELECT_STANDARD_DEPT`, `IF_HR_SELECT_STANDARD_EMPL`, `IF_CRM_SELECT` |
+| USER_ID      | `BUY`                                                                       |
+| SECRET_KEY   | `4B15rieureirueiui`                                                         |
 
 ### QUERY1 포함 호출 예시
 
