@@ -95,45 +95,43 @@ GTM은 사이트나 앱에 설치되는 **태그 관리 도구**입니다. Googl
 
 GSC는 Google Search Console이며, Google 검색에서 우리 사이트가 어떻게 노출되고 클릭되는지 확인하는 도구입니다. Google 공식 문서 기준으로 Search Console 성과 보고서는 Google 검색 결과에서 사이트가 어떻게 성과를 내는지 보여주며, 검색 트래픽 변화, 어떤 검색어가 사이트를 노출·클릭하게 했는지, 어떤 페이지의 CTR이 높은지 확인할 수 있습니다. ([구글 도움말](https://support.google.com/webmasters/answer/7576553?hl=en "Performance report (Search results): Overview and basic setup - Search Console Help"))
 
-|GSC에서 보는 항목|설명|
-|---|---|
-|검색어 Query|사용자가 Google에서 검색한 질의어|
-|클릭 Clicks|검색 결과에서 우리 사이트를 클릭한 수|
-|노출 Impressions|검색 결과에 우리 사이트가 노출된 수|
-|CTR|클릭 수 / 노출 수|
-|평균 게재순위|검색 결과에서 평균적으로 노출된 위치|
-|페이지 Pages|검색 유입이 발생한 랜딩페이지|
-|국가/기기|국가, PC/모바일 등|
-|색인 상태|Google이 페이지를 수집·색인했는지|
-|사이트맵|Google에 URL 구조 제출|
+| GSC에서 보는 항목    | 설명                    |
+| -------------- | --------------------- |
+| 검색어 Query      | 사용자가 Google에서 검색한 질의어 |
+| 클릭 Clicks      | 검색 결과에서 우리 사이트를 클릭한 수 |
+| 노출 Impressions | 검색 결과에 우리 사이트가 노출된 수  |
+| CTR            | 클릭 수 / 노출 수           |
+| 평균 게재순위        | 검색 결과에서 평균적으로 노출된 위치  |
+| 페이지 Pages      | 검색 유입이 발생한 랜딩페이지      |
+| 국가/기기          | 국가, PC/모바일 등          |
+| 색인 상태          | Google이 페이지를 수집·색인했는지 |
+| 사이트맵           | Google에 URL 구조 제출     |
 
 #### 중요한 한계
 
 GSC의 검색어 데이터는 **개별 사용자 단위 데이터가 아닙니다.** Google 공식 문서에 따르면 개인정보 보호를 위해 Performance report는 모든 데이터를 보여주지 않으며, 매우 적은 횟수의 검색어나 개인·민감 정보를 포함한 검색어는 추적되지 않을 수 있고, 내부 제한으로 모든 데이터 행이 저장되는 것도 아닙니다. ([구글 도움말](https://support.google.com/webmasters/answer/96568?hl=en "About Search Console data - Search Console Help"))  
 따라서 GSC의 검색어를 다음처럼 해석하면 안 됩니다.
 
-|잘못된 해석|이유|
-|---|---|
-|“이 비회원 사용자가 Google에서 이 키워드를 검색했다”|GSC는 사용자/세션 단위 매핑 데이터를 제공하지 않음|
-|“GSC 검색어 = 특정 방문자의 실제 검색어”|검색어는 집계 데이터이며 일부 검색어는 익명화/누락 가능|
-|“GA 세션ID와 GSC 검색어를 1:1 연결”|GA4와 GSC 연결 후에도 Search Console 차원과 Analytics 차원 결합에는 제한이 있음|
+| 잘못된 해석                            | 이유                                                          |
+| --------------------------------- | ----------------------------------------------------------- |
+| “이 비회원 사용자가 Google에서 이 키워드를 검색했다” | GSC는 사용자/세션 단위 매핑 데이터를 제공하지 않음                              |
+| “GSC 검색어 = 특정 방문자의 실제 검색어”        | 검색어는 집계 데이터이며 일부 검색어는 익명화/누락 가능                             |
+| “GA 세션ID와 GSC 검색어를 1:1 연결”        | GA4와 GSC 연결 후에도 Search Console 차원과 Analytics 차원 결합에는 제한이 있음 |
 
 ---
-
 ### 5. 세 도구의 차이
 
-|구분|GA4|GTM|GSC|
-|---|---|---|---|
-|주 목적|사이트 내부 행동 분석|태그 설치/관리|Google 검색 성과 분석|
-|데이터 발생 위치|웹사이트/앱 방문 후|웹사이트/앱에서 태그 실행 시|Google 검색 결과 화면|
-|수집 데이터|방문, 이벤트, 전환, 유입경로|직접 데이터를 분석하지 않음. 태그를 실행함|검색어, 노출, 클릭, CTR, 평균 순위|
-|사용자 행동 추적|가능|직접 분석 도구는 아님|개별 사용자 추적 불가|
-|설정 변경|GA4 관리 화면|GTM Workspace에서 태그/트리거 수정|GSC 속성, 사이트맵, 색인 관리|
-|개발 배포 필요성|직접 설치 시 필요|초기 컨테이너 설치 후 이벤트 추가는 배포 최소화 가능|별도 사이트 소스 배포는 보통 불필요|
-|커머스 활용|구매 전환, 장바구니, 상품 클릭 분석|상품/주문 이벤트 태깅 관리|SEO 키워드, 검색 랜딩페이지 개선|
+| 구분        | GA4                   | GTM                            | GSC                     |
+| --------- | --------------------- | ------------------------------ | ----------------------- |
+| 주 목적      | 사이트 내부 행동 분석          | 태그 설치/관리                       | Google 검색 성과 분석         |
+| 데이터 발생 위치 | 웹사이트/앱 방문 후           | 웹사이트/앱에서 태그 실행 시               | Google 검색 결과 화면         |
+| 수집 데이터    | 방문, 이벤트, 전환, 유입경로     | 직접 데이터를 분석하지 않음. 태그를 실행함       | 검색어, 노출, 클릭, CTR, 평균 순위 |
+| 사용자 행동 추적 | 가능                    | 직접 분석 도구는 아님                   | 개별 사용자 추적 불가            |
+| 설정 변경     | GA4 관리 화면             | GTM Workspace에서 태그/트리거 수정      | GSC 속성, 사이트맵, 색인 관리     |
+| 개발 배포 필요성 | 직접 설치 시 필요            | 초기 컨테이너 설치 후 이벤트 추가는 배포 최소화 가능 | 별도 사이트 소스 배포는 보통 불필요    |
+| 커머스 활용    | 구매 전환, 장바구니, 상품 클릭 분석 | 상품/주문 이벤트 태깅 관리                | SEO 키워드, 검색 랜딩페이지 개선    |
 
 ---
-
 ### 6. 실무 사용 흐름
 
 #### 6-1. 초기 구축 순서
@@ -151,7 +149,7 @@ H --> I[Sitemap 제출]
 I --> J[GA4-GSC 연결]
 ```
 
-GA4와 GSC를 연결할 때는 GA4의 웹 데이터 스트림과 Search Console의 웹사이트 속성을 연결합니다. Google 공식 문서도 Analytics에서 GA 웹 데이터 스트림과 Search Console 웹사이트 속성을 링크하거나, Search Console에서 링크를 생성할 수 있다고 설명합니다. ([구글 도움말](https://support.google.com/analytics/answer/10737381?hl=en "Connect Search Console to Google Analytics - Analytics Help"))
+- GA4와 GSC를 연결할 때는 GA4의 웹 데이터 스트림과 Search Console의 웹사이트 속성을 연결합니다. Google 공식 문서도 Analytics에서 GA 웹 데이터 스트림과 Search Console 웹사이트 속성을 링크하거나, Search Console에서 링크를 생성할 수 있다고 설명합니다. ([구글 도움말](https://support.google.com/analytics/answer/10737381?hl=en "Connect Search Console to Google Analytics - Analytics Help"))
 
 #### 6-2. 커머스 사이트 운영 흐름
 
@@ -167,7 +165,6 @@ GA4와 GSC를 연결할 때는 GA4의 웹 데이터 스트림과 Search Console�
 | 8   | 전환 낮은 페이지의 UX/상품추천 개선            | GA4                             |
 
 ---
-
 ### 7. GA4와 GSC를 연결하면 무엇이 좋아지는가?
 
 GA4와 GSC를 연결하면 GA4 안에서 **Google Organic Search Queries**와 **Google Organic Search Traffic** 리포트를 볼 수 있습니다. 공식 문서 기준으로 Queries 리포트는 연결된 Search Console 속성의 검색어와 Search Console 지표를 표시하고, Organic Search Traffic 리포트는 랜딩페이지와 Search Console·Analytics 지표를 함께 표시합니다. ([구글 도움말](https://support.google.com/analytics/answer/10737381?hl=en "Connect Search Console to Google Analytics - Analytics Help"))
@@ -181,7 +178,6 @@ GA4와 GSC를 연결하면 GA4 안에서 **Google Organic Search Queries**와 **
 
 - 단, GA4의 Queries 리포트는 Search Console 차원으로 더 깊게 볼 수 있지만 Analytics 차원으로 drill down할 수는 없습니다. 또한 Search Console 데이터는 최대 16개월까지 포함되고, Search Console이 수집한 뒤 Search Console과 Analytics에서 확인되기까지 48시간이 걸립니다. ([구글 도움말](https://support.google.com/analytics/answer/13682862?co=GENIE.Platform%3DDesktop&hl=en-EN "[GA4] Queries report - Computer - Analytics Help"))
 ---
-
 ### 8. 실제 예시: Google 검색 유입 사용자의 흐름
 
 ```mermaid
@@ -212,7 +208,6 @@ GTM->>GA4: select_item/add_to_cart/purchase 이벤트 전송
 | 검색어와 랜딩페이지를 함께 보고 싶나?          | GA4-GSC 연결 후 Search Console 리포트 |
 
 ---
-
 ### 9. Spring/Java 커머스 시스템에서의 설계 관점
 
 #### 9-1. 권장 구조
@@ -270,7 +265,6 @@ window.dataLayer.push({
 | 운영 배포 관리   | GTM Publish 권한은 내부 승인 절차로 통제                     |
 
 ---
-
 ### 10. 권한 관리 기준
 
 | 작업         | GA4 권한          | GTM 권한      | GSC 권한          |
@@ -285,37 +279,34 @@ window.dataLayer.push({
 
 - 외부 업체에는 처음부터 `Administrator`, `Publish`, `Owner`를 모두 주기보다, **조회는 Viewer/Read/Full**, **설정 변경은 기간 한정 Editor/Edit**, **운영 배포는 내부 담당자가 Publish**하는 방식이 안전합니다.
 ---
-
 ### 11. 실무에서 자주 생기는 오해
 
-|오해|정확한 설명|
-|---|---|
-|GTM이 데이터를 분석한다|GTM은 분석 도구가 아니라 태그 실행/관리 도구|
-|GA4에서 Google 검색어를 항상 볼 수 있다|GA4 단독으로는 제한적이며, GSC 연결이 필요|
-|GSC 검색어는 특정 방문자의 검색어다|아님. GSC 검색어는 집계 데이터이며 개인정보 보호로 일부 누락/익명화됨|
-|GA4 세션과 GSC 검색어를 1:1 연결할 수 있다|일반적으로 불가능하다고 보는 것이 안전|
-|GTM 설치만 하면 모든 클릭이 자동 분석된다|기본 수집 외 업무 이벤트는 태그/트리거/변수 설계 필요|
-|GSC 클릭 수와 GA4 세션 수는 같아야 한다|수집 기준, 지연, 차단, 쿠키, 브라우저, 집계 기준 차이로 다를 수 있음|
+| 오해                            | 정확한 설명                                     |
+| ----------------------------- | ------------------------------------------ |
+| GTM이 데이터를 분석한다                | GTM은 분석 도구가 아니라 태그 실행/관리 도구                |
+| GA4에서 Google 검색어를 항상 볼 수 있다   | GA4 단독으로는 제한적이며, GSC 연결이 필요                |
+| GSC 검색어는 특정 방문자의 검색어다         | 아님. GSC 검색어는 집계 데이터이며 개인정보 보호로 일부 누락/익명화됨  |
+| GA4 세션과 GSC 검색어를 1:1 연결할 수 있다 | 일반적으로 불가능하다고 보는 것이 안전                      |
+| GTM 설치만 하면 모든 클릭이 자동 분석된다     | 기본 수집 외 업무 이벤트는 태그/트리거/변수 설계 필요            |
+| GSC 클릭 수와 GA4 세션 수는 같아야 한다    | 수집 기준, 지연, 차단, 쿠키, 브라우저, 집계 기준 차이로 다를 수 있음 |
 
 ---
-
 ### 12. 운영 점검 체크리스트
 
-|점검 항목|확인 방법|
-|---|---|
-|GTM 코드가 모든 페이지에 설치되어 있는가|페이지 소스, Tag Assistant, Network 확인|
-|GA4 Measurement ID가 맞는가|GA4 `관리 > 데이터 스트림 > Web` 확인|
-|GTM에서 Google tag가 발화되는가|GTM Preview 확인|
-|GA4에 실시간 이벤트가 들어오는가|GA4 Realtime / DebugView 확인|
-|중복 page_view가 발생하지 않는가|Realtime, DebugView, Network `collect` 요청 확인|
-|GSC 소유권이 확인되었는가|GSC Property 확인|
-|사이트맵이 제출되었는가|GSC Sitemap 메뉴 확인|
-|GA4-GSC 연결이 되었는가|GA4 Admin Product links / Search Console links 확인|
-|Search Console 리포트가 GA4에 보이는가|GA4 Reports > Search Console collection 확인|
-|검색어 데이터 지연을 고려했는가|GSC 데이터는 수집 후 Analytics 반영까지 지연 가능|
+| 점검 항목                         | 확인 방법                                             |
+| ----------------------------- | ------------------------------------------------- |
+| GTM 코드가 모든 페이지에 설치되어 있는가      | 페이지 소스, Tag Assistant, Network 확인                 |
+| GA4 Measurement ID가 맞는가       | GA4 `관리 > 데이터 스트림 > Web` 확인                       |
+| GTM에서 Google tag가 발화되는가       | GTM Preview 확인                                    |
+| GA4에 실시간 이벤트가 들어오는가           | GA4 Realtime / DebugView 확인                       |
+| 중복 page_view가 발생하지 않는가        | Realtime, DebugView, Network `collect` 요청 확인      |
+| GSC 소유권이 확인되었는가               | GSC Property 확인                                   |
+| 사이트맵이 제출되었는가                  | GSC Sitemap 메뉴 확인                                 |
+| GA4-GSC 연결이 되었는가              | GA4 Admin Product links / Search Console links 확인 |
+| Search Console 리포트가 GA4에 보이는가 | GA4 Reports > Search Console collection 확인        |
+| 검색어 데이터 지연을 고려했는가             | GSC 데이터는 수집 후 Analytics 반영까지 지연 가능                |
 
 ---
-
 ### 최종 정리
 
 | 구분            | 가장 중요한 역할                                                                        |
@@ -330,7 +321,6 @@ window.dataLayer.push({
 - 실무적으로는 **GTM은 설치/수집 관리**, **GA4는 행동/전환 분석**, **GSC는 검색 노출/클릭/SEO 분석**으로 역할을 명확히 분리해야 합니다. 특히 GSC 검색어는 특정 비회원이나 특정 세션의 실제 검색어로 사용하면 안 되고, **SEO 개선을 위한 집계 데이터**로만 사용하는 것이 안전합니다.
 
 ---
-
 ## 유입 Keyword 취득과 상품 추천
 
 ### 결론
@@ -342,7 +332,6 @@ window.dataLayer.push({
 | 핵심 설계 원칙                                  | GSC는 SEO/검색의도 분석용, GA4는 행동 분석용, GTM은 이벤트 수집 설정용, 실제 추천은 Spring 서버/추천 DB에서 처리                    |
 
 ---
-
 ### 1. Google 검색어 취득의 현실
 
 #### 1-1. 불가능한 것
@@ -368,7 +357,6 @@ Google Analytics 공식 도움말에서도 대부분의 Google 검색은 HTTPS�
 
 - GSC Performance Report는 Google 검색 결과에서 사이트가 어떤 검색어로 노출·클릭되었는지 확인하는 용도입니다. Google 공식 문서도 검색 트래픽 변화, 검색어, 클릭, CTR 등을 SEO 개선에 활용할 수 있다고 설명합니다. ([구글 도움말](https://support.google.com/webmasters/answer/7576553?hl=en&utm_source=chatgpt.com "Performance report (Search results): Overview and basic ..."))
 ---
-
 ### 2. GA4-GSC 연동으로 확인 가능한 검색어
 
 GA4와 GSC를 연결하면 GA4 안에서 Search Console 기반의 **Queries report**와 **Google organic search traffic report**를 볼 수 있습니다. Queries report는 연결된 Search Console 속성의 검색어와 Search Console 지표를 보여주며, Analytics 차원으로 세부 drill-down은 제한됩니다. ([구글 도움말](https://support.google.com/analytics/answer/13682862?co=GENIE.Platform%3DDesktop&hl=en-EN&utm_source=chatgpt.com "[GA4] Queries report - Computer - Analytics Help"))
@@ -381,7 +369,6 @@ GA4와 GSC를 연결하면 GA4 안에서 Search Console 기반의 **Queries repo
 
 - Search Console 데이터는 개인정보 보호를 위해 일부 검색어가 익명화되거나 누락될 수 있습니다. Google 공식 문서도 일부 query가 사용자 개인정보 보호를 위해 보고서에서 생략된다고 설명합니다. ([구글 도움말](https://support.google.com/webmasters/answer/17011259?hl=en&utm_source=chatgpt.com "Performance report (Search results): Dimensions and data ..."))
 ---
-
 ### 3. 실무적인 검색어 취득 구조
 
 #### 3-1. 전체 구조
@@ -404,7 +391,6 @@ L --> M[상품 추천]
 ```
 
 ---
-
 ### 4. 방법 1: GSC에서 검색어-랜딩페이지 집계 취득
 
 #### 4-1. GSC API 사용
@@ -448,7 +434,6 @@ curl -X POST "https://www.googleapis.com/webmasters/v3/sites/sc-domain%3Abuykore
 ```
 
 ---
-
 ### 5. 방법 2: 내 사이트 최초 유입 정보 저장
 
 Google 검색어 자체는 못 받지만, **사용자가 어느 페이지로 들어왔는지**는 서버에서 저장할 수 있습니다.
@@ -499,7 +484,6 @@ public class FirstVisitTrackingInterceptor implements HandlerInterceptor {
 > 단, 비회원 식별용 쿠키를 발급하고 행동 데이터를 저장하는 경우 국가별 개인정보/쿠키 고지·동의 정책 검토가 필요합니다.
 
 ---
-
 ### 6. 방법 3: GSC 검색어를 랜딩페이지 기준으로 매핑
 
 특정 사용자의 검색어는 알 수 없으므로, 실무에서는 다음처럼 **추정 모델**을 만듭니다.
@@ -540,7 +524,6 @@ intent_score =
 ```
 
 ---
-
 ### 7. 검색어 취득 테이블 설계 예시
 
 #### GSC 집계 테이블
@@ -591,7 +574,6 @@ CREATE TABLE page_search_intent (
 ```
 
 ---
-
 ### 8. 상품 추천을 위한 실무 구조
 
 #### 핵심 원칙
@@ -607,7 +589,6 @@ CREATE TABLE page_search_intent (
 
 - **GA4/GSC를 실시간 추천 API의 직접 데이터 소스로 쓰는 것은 비권장**입니다. GA4와 GSC는 분석 도구이고, 추천은 Spring 서버에서 자체 DB 기반으로 처리하는 것이 안정적입니다.
 ---
-
 ### 9. 추천 처리 흐름
 
 ```mermaid
@@ -631,7 +612,6 @@ Spring->>Site: 추천 상품 목록 반환
 ```
 
 ---
-
 ### 10. 추천에 사용할 데이터 우선순위
 
 | 우선순위 | 데이터                  | 추천 신뢰도 | 예시                        |
@@ -645,7 +625,6 @@ Spring->>Site: 추천 상품 목록 반환
 |    7 | 전체 인기상품              |     낮음 | 데이터 부족 시 fallback         |
 
 ---
-
 ### 11. GTM/GA4 이벤트 수집 설계
 
 #### 상품 상세 조회
@@ -707,7 +686,6 @@ window.dataLayer.push({
 ```
 
 ---
-
 ### 12. Spring 서버 추천 이벤트 저장
 
 GTM/GA4는 분석용으로 보내고, 추천에 필요한 실시간 이벤트는 서버에도 저장하는 것이 좋습니다.
@@ -760,7 +738,6 @@ public class RecommendController {
 ```
 
 ---
-
 ### 13. 추천 로직 예시
 
 #### 13-1. 추천 후보 생성
@@ -829,7 +806,6 @@ public class RecommendService {
 ```
 
 ---
-
 ### 14. 추천 시나리오 예시
 
 #### 상황
@@ -863,7 +839,6 @@ GSC 기준 /product/P10001의 주요 검색어:
 | 인기 K-Beauty 상품     | 카테고리 인기 기반       |
 
 ---
-
 ### 15. 하면 안 되는 설계
 
 | 잘못된 설계                             | 문제                          |
@@ -875,7 +850,6 @@ GSC 기준 /product/P10001의 주요 검색어:
 | 사용자 식별 쿠키를 고지 없이 장기간 사용            | 개인정보/쿠키 규제 리스크              |
 
 ---
-
 ### 16. 가장 현실적인 구축안
 
 |  단계 | 구축 내용                                        | 사용 도구           |
@@ -891,7 +865,6 @@ GSC 기준 /product/P10001의 주요 검색어:
 |   9 | GA4에서 추천 영역 클릭/구매 성과 검증                      | GA4             |
 
 ---
-
 ### 최종 정리
 
 | 항목               | 정리                                             |
