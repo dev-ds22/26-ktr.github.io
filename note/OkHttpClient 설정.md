@@ -5,21 +5,21 @@ Spring Java Config는 `@Configuration` 클래스 안에 `@Bean` 메서드로 여
 
 ### Config 파일 분리 판단 기준
 
-|구분|권장 방식|이유|
-|---|--:|---|
-|`product/search/mail` 3개 수준|기존 `OkHttpConfig`에 추가|모두 외부 HTTP Client 설정이라는 같은 관심사|
-|Client 수가 5~10개 이상 증가|도메인별 Config 분리|파일 비대화 방지|
-|상품추천/검색추천이 같은 외부 시스템, 같은 timeout 정책|하나의 `recommenderOkHttpClient` 공유|불필요한 Pool 분리 방지|
-|상품추천/검색추천의 timeout, 장애격리, 호출량이 다름|Bean 분리|ConnectionPool, timeout, 장애 영향 분리|
-|Mail 발송 API|별도 Bean 권장|추천 API와 응답시간, 장애 영향, 재시도 정책이 다름|
+| 구분                                  |                            권장 방식 | 이유                                |
+| ----------------------------------- | -------------------------------: | --------------------------------- |
+| `product/search/mail` 3개 수준         |            기존 `OkHttpConfig`에 추가 | 모두 외부 HTTP Client 설정이라는 같은 관심사    |
+| Client 수가 5~10개 이상 증가               |                   도메인별 Config 분리 | 파일 비대화 방지                         |
+| 상품추천/검색추천이 같은 외부 시스템, 같은 timeout 정책 | 하나의 `recommenderOkHttpClient` 공유 | 불필요한 Pool 분리 방지                   |
+| 상품추천/검색추천의 timeout, 장애격리, 호출량이 다름   |                          Bean 분리 | ConnectionPool, timeout, 장애 영향 분리 |
+| Mail 발송 API                         |                       별도 Bean 권장 | 추천 API와 응답시간, 장애 영향, 재시도 정책이 다름   |
 
 ### 추천 구조
 
-|Bean 이름|용도|분리 이유|
-|---|---|---|
-|`productRecommenderOkHttpClient`|상품 추천 API|빠른 응답 필요, 짧은 timeout|
-|`searchRecommenderOkHttpClient`|검색 추천/자동완성 API|사용자 입력 흐름에 직접 영향, 더 짧은 timeout 가능|
-|`mailSendOkHttpClient`|메일 발송 API|추천 API보다 응답 시간이 길 수 있고 장애격리 필요|
+| Bean 이름                          | 용도             | 분리 이유                             |
+| -------------------------------- | -------------- | --------------------------------- |
+| `productRecommenderOkHttpClient` | 상품 추천 API      | 빠른 응답 필요, 짧은 timeout              |
+| `searchRecommenderOkHttpClient`  | 검색 추천/자동완성 API | 사용자 입력 흐름에 직접 영향, 더 짧은 timeout 가능 |
+| `mailSendOkHttpClient`           | 메일 발송 API      | 추천 API보다 응답 시간이 길 수 있고 장애격리 필요    |
 
 ### 실무 적용 예제: `OkHttpConfig.java`
 
