@@ -182,6 +182,7 @@ private void logConnectionPoolIfDebug() {
 | Debug 로그 조건 분리                          | `log.isDebugEnabled()` 확인 후 pool 로그 출력             | 불필요한 로그 연산 감소          |
 | 로그 placeholder 정리                       | Throwable은 마지막 인자로 분리                              | Stack trace 정상 출력      |
 | 응답 로그 mask 적용                           | 성공 응답에도 `maskResponse()` 적용                        | 개인정보/대용량 로그 위험 완화      |
+|                                         |                                                    |                        |
 
 ### 리소스 관리 관점 검토
 
