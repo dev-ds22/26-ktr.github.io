@@ -208,13 +208,13 @@ public class ProductRecommenderClient {
 
 ### 중요한 실무 주의점
 
-|항목|설명|
-|---|---|
-|`ConnectionPool`은 최대 호출 수 제한이 아님|`maxIdleConnections`는 idle 상태로 보관할 커넥션 수이지, 동시 호출 상한이 아님|
-|같은 URL별로 Client를 만들면 안 됨|URL 단위가 아니라 외부 시스템, timeout, 장애격리 기준으로 분리|
-|`readTimeout/writeTimeout`은 명시 권장|현재 첨부 소스는 `connectTimeout`만 설정되어 있어 외부 API 응답 지연 시 WAS Thread 점유 시간이 길어질 수 있음|
-|메일 API는 추천 API와 분리 권장|메일 API 장애가 상품추천/검색추천 호출 Pool에 영향을 주지 않도록 분리|
-|여러 `OkHttpClient` Bean 주입 시 `@Qualifier` 필수|동일 타입 Bean이 2개 이상이면 Spring이 어떤 Bean을 주입할지 판단하지 못할 수 있음|
+| 항목                                          | 설명                                                                            |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| `ConnectionPool`은 최대 호출 수 제한이 아님            | `maxIdleConnections`는 idle 상태로 보관할 커넥션 수이지, 동시 호출 상한이 아님                      |
+| 같은 URL별로 Client를 만들면 안 됨                    | URL 단위가 아니라 외부 시스템, timeout, 장애격리 기준으로 분리                                     |
+| `readTimeout/writeTimeout`은 명시 권장           | 현재 첨부 소스는 `connectTimeout`만 설정되어 있어 외부 API 응답 지연 시 WAS Thread 점유 시간이 길어질 수 있음 |
+| 메일 API는 추천 API와 분리 권장                       | 메일 API 장애가 상품추천/검색추천 호출 Pool에 영향을 주지 않도록 분리                                   |
+| 여러 `OkHttpClient` Bean 주입 시 `@Qualifier` 필수 | 동일 타입 Bean이 2개 이상이면 Spring이 어떤 Bean을 주입할지 판단하지 못할 수 있음                        |
 
 ### 최종 권장안
 

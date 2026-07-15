@@ -8,6 +8,7 @@
 | 매 요청마다 `MediaType.parse()` 수행                          | `static final MediaType`로 재사용                                |
 | 응답/요청 전체 로그 출력 가능                                      | `maskResponse()` 사용 유지, 필요 시 길이 제한 권장                        |
 | `@SuppressWarnings("null")` 사용                         | 제거 가능                                                        |
+|                                                        |                                                              |
 
 ### 리팩토링 후 소스
 
