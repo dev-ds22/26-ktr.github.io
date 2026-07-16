@@ -13,7 +13,7 @@
             'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
 })(window, document, 'script', 'dataLayer', 'GTM-PXJDS7MQ');
 </script>
-<!— End Google Tag Manager —>
+<!-- Google Tag Manager -->
 ```
 
 - 상품 상세 페이지 바디 최상단에
