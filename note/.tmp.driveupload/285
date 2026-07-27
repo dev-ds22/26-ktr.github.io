@@ -1,0 +1,265 @@
+{
+  "main": {
+    "id": "da5b663d87d90916",
+    "type": "split",
+    "children": [
+      {
+        "id": "f79c7a0b53a7fb3f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "751833d68b937ea7",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "안드로이드 개발 환경 구축.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "안드로이드 개발 환경 구축"
+            }
+          },
+          {
+            "id": "c625a8a68724e5dd",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "GSC 상품유입 크롤링.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "GSC 상품유입 크롤링"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d8a7c81924892e90",
+    "type": "split",
+    "children": [
+      {
+        "id": "fcd291b0bcedfe0f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9f4f7417611c6cac",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "byCreatedTime",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "파일 탐색기"
+            }
+          },
+          {
+            "id": "12f5e05cd9c7fda5",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "검색"
+            }
+          },
+          {
+            "id": "12942995633423e6",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "북마크"
+            }
+          },
+          {
+            "id": "ba5b575baffd8a07",
+            "type": "leaf",
+            "state": {
+              "type": "recent-files",
+              "state": {},
+              "icon": "lucide-ghost",
+              "title": "recent-files"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "right": {
+    "id": "c60cabc0cc42a8d2",
+    "type": "split",
+    "children": [
+      {
+        "id": "65159e35a51411ed",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "40b8699f09f4d2fb",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "_template/jekyll-tech-output.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "jekyll-tech-output 의 백링크"
+            }
+          },
+          {
+            "id": "78f11790ed396020",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "_template/jekyll-tech-output.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "jekyll-tech-output 의 나가는 링크"
+            }
+          },
+          {
+            "id": "3672e91fc28d490f",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "태그"
+            }
+          },
+          {
+            "id": "fe962751fe6dacd1",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "모든 속성"
+            }
+          },
+          {
+            "id": "aaf13fd37ae58ecf",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "_template/jekyll-tech-output.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "jekyll-tech-output 의 개요"
+            }
+          },
+          {
+            "id": "c150e025b2e32dc0",
+            "type": "leaf",
+            "state": {
+              "type": "git-view",
+              "state": {},
+              "icon": "git-pull-request",
+              "title": "Source Control"
+            }
+          }
+        ],
+        "currentTab": 5
+      }
+    ],
+    "direction": "horizontal",
+    "width": 288.5
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "omnisearch:Omnisearch": false,
+      "switcher:빠른 전환기 열기": false,
+      "graph:그래프 뷰 열기": false,
+      "canvas:새 캔버스 만들기": false,
+      "daily-notes:오늘의 일일 노트 열기": false,
+      "templates:템플릿 삽입": false,
+      "command-palette:명령어 팔레트 열기": false,
+      "bases:새 베이스 생성하기": false,
+      "templater-obsidian:Templater": false,
+      "obsidian-excalidraw-plugin:New drawing": false,
+      "remotely-save:Remotely Save": false,
+      "obsidian-git:Open Git source control": false
+    }
+  },
+  "active": "c150e025b2e32dc0",
+  "lastOpenFiles": [
+    "KakaoTalk_20260727_094433655.png",
+    "GSC 상품유입 크롤링.md",
+    "안드로이드 개발 환경 구축.md",
+    "Full GC 모니터링.md",
+    "jstat jcmd.md",
+    "GTM 상품 상세 적용.md",
+    "신버전 Java, Jenkins 병행 설치법.md",
+    "Jenkin 플러그인 및 재설치.md",
+    "Socket 관련 소스 리팩토링.md",
+    "Gemini 스크립트.md",
+    "OkHttpClient 설정.md",
+    "GA_GTM_GSC 관계.md",
+    "curl 작성.md",
+    "Driven 미팅 정리본.md",
+    "드리븐 미팅 준비.md",
+    "GTM-JavaScript 분석.md",
+    "Google Tag Manager.md",
+    "상품 추천 솔루션.md",
+    "비회원 상품 추천.md",
+    "현재 GTM 분석.md",
+    "상품 추천 법적 검토 결과.md",
+    "GTM dataLayer 관리.md",
+    "FO트랜잭션_DB, Socket연결 개선 상황.md",
+    "비회원 상품 추천 구성안.md",
+    "CORS 오류 해법.md",
+    "Squash Commit.md",
+    "Excalidraw",
+    "Pasted image 20260526133959.png",
+    "Pasted image 20260518104811.png",
+    "Pasted image 20260515110851.png",
+    "Pasted image 20260515140939.png",
+    "_posts",
+    "_post",
+    "output",
+    "2025-01-02-threadlocal.markdown",
+    "_template"
+  ]
+}
