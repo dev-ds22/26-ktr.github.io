@@ -70,7 +70,7 @@
             </ul>
             <span class="nav__sub-title">INVEST</span>
             <ul>
-                {% for category in site.categories %} {% if category[0] == "tools" %}
+                {% for category in site.categories %} {% if category[0] == "invest" %}
                 <li><a href="/26_ktr/categories/invest" class="">INVEST ({{category[1].size}})</a></li>
                 {% endif %} {% endfor %}
             </ul>
