@@ -3,10 +3,9 @@ layout: single
 title: "Invest_San_Il_Electrics"
 excerpt: "Invest_San_Il_Electrics"
 categories:
-  - "tech"
+  - "invest"
 tags:
-  - "tech"
-  - "memo"
+  - "invest"
 toc: false
 toc_sticky: true
 date: "2026-07-30"

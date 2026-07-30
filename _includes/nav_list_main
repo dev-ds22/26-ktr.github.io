@@ -68,6 +68,12 @@
                 <li><a href="/26_ktr/categories/etc" class="">ETC. ({{category[1].size}})</a></li>
                 {% endif %} {% endfor %}
             </ul>
+            <span class="nav__sub-title">INVEST</span>
+            <ul>
+                {% for category in site.categories %} {% if category[0] == "tools" %}
+                <li><a href="/26_ktr/categories/invest" class="">INVEST ({{category[1].size}})</a></li>
+                {% endif %} {% endfor %}
+            </ul>
         </li>
     </ul>
 </nav>
