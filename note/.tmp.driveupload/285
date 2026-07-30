@@ -34,9 +34,23 @@
               "icon": "lucide-file",
               "title": "GTM 사용법2"
             }
+          },
+          {
+            "id": "d6f280c8cb1f5433",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "GA4 Data Studio.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "GA4 Data Studio"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -103,7 +117,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "right": {
     "id": "c60cabc0cc42a8d2",
@@ -223,8 +238,9 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "c95f9818d5a4fc97",
+  "active": "d6f280c8cb1f5433",
   "lastOpenFiles": [
+    "GA4 Data Studio.md",
     "GTM 사용법 1.md",
     "GTM 사용법2.md",
     "안드로이드 개발 환경 구축.md",
@@ -252,7 +268,6 @@
     "현재 GTM 분석.md",
     "상품 추천 법적 검토 결과.md",
     "GTM dataLayer 관리.md",
-    "FO트랜잭션_DB, Socket연결 개선 상황.md",
     "Pasted image 20260526133959.png",
     "Pasted image 20260518104811.png",
     "Pasted image 20260515110851.png",
