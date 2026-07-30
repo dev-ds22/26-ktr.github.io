@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-07-30"
-last_modified_at: "2026-07-30 13:45:45 +0900"
+last_modified_at: "2026-07-30 17:20:27 +0900"
 mermaid: true
 ---
 ### 1. JSON-LD란?
