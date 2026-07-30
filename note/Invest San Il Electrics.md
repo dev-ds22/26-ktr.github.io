@@ -1,0 +1,1 @@
+![[invest_simulation_sanil_electrocs.png]]
