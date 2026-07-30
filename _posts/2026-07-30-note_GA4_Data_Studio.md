@@ -10,7 +10,7 @@ tags:
 toc: false
 toc_sticky: true
 date: "2026-07-30"
-last_modified_at: "2026-07-30 11:50:36 +0900"
+last_modified_at: "2026-07-30 13:45:38 +0900"
 mermaid: true
 ---
 ### 1. 먼저 용어 정리
