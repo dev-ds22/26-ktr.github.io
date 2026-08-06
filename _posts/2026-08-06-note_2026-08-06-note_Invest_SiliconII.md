@@ -35,13 +35,6 @@ mermaid: false
 * `50,000원 이상`: 실적을 다시 확인한 후 잔여 물량 대응
 
 <details>
-  <summary>
-
-  </summary>  
-  <pre>
-  </pre>
-</details>
-<details>
   <summary>참고</summary>  
   <pre>
   </pre>

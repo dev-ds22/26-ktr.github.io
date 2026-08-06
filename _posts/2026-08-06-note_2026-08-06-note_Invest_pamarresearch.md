@@ -17,16 +17,13 @@ mermaid: false
 
 ## 2. 매수
 ![02_분할_매수_1](./../../images/2026-08-06-note_2026-08-06-note_Invest_p/02_분할_매수_1.png)
+
 ## 3. 3, 목표가
 ![03_손절_목표가](./../../images/2026-08-06-note_2026-08-06-note_Invest_p/03_손절_목표가.png)
+
 ## 4. 확인사항
 ![04_실행_체크](./../../images/2026-08-06-note_2026-08-06-note_Invest_p/04_실행_체크.png)
 
-<details>
-  <summary>참고</summary>  
-  <pre>
-  </pre>
-</details>
 <details>
   <summary>참고</summary>  
   <pre>
