@@ -15,6 +15,7 @@ mermaid: false
 ### 1. 시물레이션
 
 ![invest_simulation_sanil_electrocs](./../../images/2026-07-30-note_Invest_San_Il_Electrics/invest_simulation_sanil_electrocs.png)
+
 <details>
   <summary>참고</summary>  
   <pre>

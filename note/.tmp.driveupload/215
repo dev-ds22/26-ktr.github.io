@@ -1,0 +1,208 @@
+{
+  "recentFiles": [
+    {
+      "basename": "GTM 사용법2",
+      "path": "GTM 사용법2.md"
+    },
+    {
+      "basename": "Invest San Il Electrics",
+      "path": "Invest San Il Electrics.md"
+    },
+    {
+      "basename": "2026-08-06-note_Invest_SiliconII",
+      "path": "2026-08-06-note_Invest_SiliconII.md"
+    },
+    {
+      "basename": "2026-08-06-note_Invest_pamarresearch",
+      "path": "2026-08-06-note_Invest_pamarresearch.md"
+    },
+    {
+      "basename": "invest_simulation_sanil_electrocs",
+      "path": "invest_simulation_sanil_electrocs.png"
+    },
+    {
+      "basename": "JSON-LD",
+      "path": "JSON-LD.md"
+    },
+    {
+      "basename": "OG태그 - SEO 관련",
+      "path": "OG태그 - SEO 관련.md"
+    },
+    {
+      "basename": "AES256 암호화",
+      "path": "AES256 암호화.md"
+    },
+    {
+      "basename": "GA4 Data Studio",
+      "path": "GA4 Data Studio.md"
+    },
+    {
+      "basename": "GTM 사용법 1",
+      "path": "GTM 사용법 1.md"
+    },
+    {
+      "basename": "안드로이드 개발 환경 구축",
+      "path": "안드로이드 개발 환경 구축.md"
+    },
+    {
+      "basename": "Drawing 2026-07-30 10.04.24.excalidraw",
+      "path": "Excalidraw/Drawing 2026-07-30 10.04.24.excalidraw.md"
+    },
+    {
+      "basename": "GSC 상품유입 크롤링",
+      "path": "GSC 상품유입 크롤링.md"
+    },
+    {
+      "basename": "Driven 제안 분석",
+      "path": "Driven 제안 분석.md"
+    },
+    {
+      "basename": "Full GC 모니터링",
+      "path": "Full GC 모니터링.md"
+    },
+    {
+      "basename": "jstat jcmd",
+      "path": "jstat jcmd.md"
+    },
+    {
+      "basename": "GTM 상품 상세 적용",
+      "path": "GTM 상품 상세 적용.md"
+    },
+    {
+      "basename": "신버전 Java, Jenkins 병행 설치법",
+      "path": "신버전 Java, Jenkins 병행 설치법.md"
+    },
+    {
+      "basename": "Jenkin 플러그인 및 재설치",
+      "path": "Jenkin 플러그인 및 재설치.md"
+    },
+    {
+      "basename": "Socket 관련 소스 리팩토링",
+      "path": "Socket 관련 소스 리팩토링.md"
+    },
+    {
+      "basename": "Gemini 스크립트",
+      "path": "Gemini 스크립트.md"
+    },
+    {
+      "basename": "OkHttpClient 설정",
+      "path": "OkHttpClient 설정.md"
+    },
+    {
+      "basename": "GA_GTM_GSC 관계",
+      "path": "GA_GTM_GSC 관계.md"
+    },
+    {
+      "basename": "curl 작성",
+      "path": "curl 작성.md"
+    },
+    {
+      "basename": "Driven 미팅 정리본",
+      "path": "Driven 미팅 정리본.md"
+    },
+    {
+      "basename": "드리븐 미팅 준비",
+      "path": "드리븐 미팅 준비.md"
+    },
+    {
+      "basename": "GTM-JavaScript 분석",
+      "path": "GTM-JavaScript 분석.md"
+    },
+    {
+      "basename": "Google Tag Manager",
+      "path": "Google Tag Manager.md"
+    },
+    {
+      "basename": "상품 추천 솔루션",
+      "path": "상품 추천 솔루션.md"
+    },
+    {
+      "basename": "비회원 상품 추천",
+      "path": "비회원 상품 추천.md"
+    },
+    {
+      "basename": "현재 GTM 분석",
+      "path": "현재 GTM 분석.md"
+    },
+    {
+      "basename": "상품 추천 법적 검토 결과",
+      "path": "상품 추천 법적 검토 결과.md"
+    },
+    {
+      "basename": "GTM dataLayer 관리",
+      "path": "GTM dataLayer 관리.md"
+    },
+    {
+      "basename": "FO트랜잭션_DB, Socket연결 개선 상황",
+      "path": "FO트랜잭션_DB, Socket연결 개선 상황.md"
+    },
+    {
+      "basename": "비회원 상품 추천 구성안",
+      "path": "비회원 상품 추천 구성안.md"
+    },
+    {
+      "basename": "CORS 오류 해법",
+      "path": "CORS 오류 해법.md"
+    },
+    {
+      "basename": "Squash Commit",
+      "path": "Squash Commit.md"
+    },
+    {
+      "basename": "SocketException-okhttp3",
+      "path": "SocketException-okhttp3.md"
+    },
+    {
+      "basename": "Socket Connection Pool",
+      "path": "Socket Connection Pool.md"
+    },
+    {
+      "basename": "OkHttp ConnectionPool",
+      "path": "OkHttp ConnectionPool.md"
+    },
+    {
+      "basename": "Socket-Morniring 파일 log 생성 커맨드",
+      "path": "Socket-Morniring 파일 log 생성 커맨드.md"
+    },
+    {
+      "basename": "DisposableBean-Spring",
+      "path": "DisposableBean-Spring.md"
+    },
+    {
+      "basename": "EventListener-OkHttp",
+      "path": "EventListener-OkHttp.md"
+    },
+    {
+      "basename": "Socket 오류 등에 대한 보고서",
+      "path": "Socket 오류 등에 대한 보고서.md"
+    },
+    {
+      "basename": "Socket 생성에 의한 Server CPU Memory 모니터링",
+      "path": "Socket 생성에 의한 Server CPU Memory 모니터링.md"
+    },
+    {
+      "basename": "DBCP 최종 정리",
+      "path": "DBCP 최종 정리.md"
+    },
+    {
+      "basename": "git 개선 방안 고찰",
+      "path": "git 개선 방안 고찰.md"
+    },
+    {
+      "basename": "git PRD브랜치의 내용을 DEV와 FEATURE에 반영",
+      "path": "git PRD브랜치의 내용을 DEV와 FEATURE에 반영.md"
+    },
+    {
+      "basename": "AI 테스트",
+      "path": "AI 테스트.md"
+    },
+    {
+      "basename": "Windows Socket Mornitoring",
+      "path": "Windows Socket Mornitoring.md"
+    }
+  ],
+  "omittedPaths": [],
+  "omittedTags": [],
+  "updateOn": "file-open",
+  "omitBookmarks": false
+}
