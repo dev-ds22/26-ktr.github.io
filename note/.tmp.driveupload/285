@@ -128,7 +128,10 @@
             "type": "leaf",
             "state": {
               "type": "bookmarks",
-              "state": {},
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
               "icon": "lucide-bookmark",
               "title": "북마크"
             }
@@ -143,7 +146,8 @@
               "title": "recent-files"
             }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "horizontal",
@@ -267,7 +271,7 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "8370b1119b77b9a0",
+  "active": "12942995633423e6",
   "lastOpenFiles": [
     "Invest San Il Electrics.md",
     "2026-08-06-note_Invest_SiliconII.md",
