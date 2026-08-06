@@ -147,7 +147,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 213.40015411376953
+    "width": 465.7907180786133
   },
   "right": {
     "id": "c60cabc0cc42a8d2",
@@ -249,7 +249,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 288.5
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -269,13 +269,16 @@
   },
   "active": "8370b1119b77b9a0",
   "lastOpenFiles": [
+    "2026-08-06-note_Invest_SiliconII.md",
+    "02_매매 실행안.png",
+    "01_투자 요약 (1).png",
+    "2026-08-06-note_Invest_pamar-research.md",
     "04_실행 체크.png",
     "03_손절 목표가.png",
     "02_분할 매수 1.png",
     "02_분할 매수.png",
     "01_투자 요약.png",
     "AES256 암호화.md",
-    "2026-08-06-note_Invest_pamar-research.md",
     "Invest San Il Electrics.md",
     "invest_simulation_sanil_electrocs.png",
     "GA4 Data Studio.md",
@@ -303,10 +306,6 @@
     "GA_GTM_GSC 관계.md",
     "curl 작성.md",
     "Driven 미팅 정리본.md",
-    "드리븐 미팅 준비.md",
-    "Pasted image 20260526133959.png",
-    "Pasted image 20260518104811.png",
-    "Pasted image 20260515110851.png",
     "_posts",
     "_post",
     "output",

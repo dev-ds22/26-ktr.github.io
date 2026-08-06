@@ -1,15 +1,15 @@
 ---
 layout: single
-title: "Invest_San_Il_Electrics"
-excerpt: "Invest_San_Il_Electrics"
+title: 파마리서치
+excerpt: 파마리서치
 categories:
-  - "invest"
+  - invest
 tags:
-  - "invest"
+  - invest
 toc: false
 toc_sticky: true
-date: "2026-07-30"
-last_modified_at: "2026-07-30 17:30:55 +0900"
+date: 2026-08-06
+last_modified_at: 2026-08-06 17:30:55 +0900
 mermaid: false
 ---
 ## 1. 요약
