@@ -55,12 +55,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "2026-08-06-note_Invest_pamar-research.md",
+                "file": "2026-08-06-note_Invest_pamarresearch.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-08-06-note_Invest_pamar-research"
+              "title": "2026-08-06-note_Invest_pamarresearch"
             }
           },
           {
@@ -147,7 +147,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 465.7907180786133
+    "width": 200
   },
   "right": {
     "id": "c60cabc0cc42a8d2",
@@ -249,7 +249,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 693.156982421875
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -270,9 +270,10 @@
   "active": "8370b1119b77b9a0",
   "lastOpenFiles": [
     "2026-08-06-note_Invest_SiliconII.md",
+    "OG태그 - SEO 관련.md",
+    "2026-08-06-note_Invest_pamarresearch.md",
     "02_매매 실행안.png",
     "01_투자 요약 (1).png",
-    "2026-08-06-note_Invest_pamar-research.md",
     "04_실행 체크.png",
     "03_손절 목표가.png",
     "02_분할 매수 1.png",
@@ -287,7 +288,6 @@
     "산일전기 시물레이션.md",
     "산일전기 600만원 투자 시뮬레이션.png",
     "JSON-LD.md",
-    "OG태그 - SEO 관련.md",
     "GTM 사용법 1.md",
     "안드로이드 개발 환경 구축.md",
     "Excalidraw/Drawing 2026-07-30 10.04.24.excalidraw.md",
