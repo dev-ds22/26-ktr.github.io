@@ -1,3 +1,18 @@
+---
+layout: single
+title: "중복_로그인_Replicated_cache_사용"
+excerpt: "중복_로그인_Replicated_cache_사용"
+categories:
+  - "tech"
+tags:
+  - "tech"
+  - "memo"
+toc: false
+toc_sticky: true
+date: "2026-08-19"
+last_modified_at: "2026-08-19 14:48:12 +0900"
+mermaid: true
+---
 ## 1. 결론
 
 네. **매 인증 Request마다 MariaDB에서 Token을 SELECT하는 방식은 동작은 확실하지만, 현재 구조에서는 최적안은 아닙니다.**
@@ -110,7 +125,7 @@ public CacheManager cacheManager() {
 }
 ```
 
-### 단일 WAS에서는 가능하지만 현재 A/B 구조의 **엄격한 중복 로그인 제어에는 사용하면 안 됩니다.**
+### 2-1. 단일 WAS에서는 가능하지만 현재 A/B 구조의 **엄격한 중복 로그인 제어에는 사용하면 안 됩니다.**
 
 ## 3. 현재 구조에서 가장 적합한 방식
 
@@ -202,7 +217,7 @@ WAS JVM Memory
 
 ## 5. 성능 차이
 
-#### 기존 DB 검증
+#### 5-1-1. 기존 DB 검증
 
 ```text
 Request
@@ -222,7 +237,7 @@ Filter
 Controller
 ```
 
-#### Infinispan 방식
+#### 5-1-2. Infinispan 방식
 
 ```text
 Request
@@ -261,10 +276,11 @@ Controller
 Request마다 검증
 ```
 
-### 자체는 유지하는 편이 좋습니다.
+### 5-2. 자체는 유지하는 편이 좋습니다.
 
 ## 6. 권장 Architecture
 
+{% raw %}
 ```mermaid
 flowchart TD
     C1["PC-A"] --> N["Nginx"]
@@ -280,6 +296,7 @@ flowchart TD
     F2 --> LC2["login-control/tokens"]
     LC1 <-->|Replicated SYNC| LC2
 ```
+{% endraw %}
 
 데이터 역할도 분리됩니다.
 
@@ -311,7 +328,7 @@ login-control/tokens
 
 JBoss EAP는 cache-container와 replicated-cache 추가를 공식 지원하며 CLI에서도 다음 형식으로 구성합니다. ([레드햇 문서][2])
 
-#### CLI 방식 권장
+#### 7-1-1. CLI 방식 권장
 
 직접 XML 편집보다 CLI batch 방식이 안전합니다.
 
@@ -410,7 +427,7 @@ public class LoginCacheConfig {
 }
 ```
 
-### Spring Framework는 `JndiObjectFactoryBean`/JNDI lookup 같은 Java EE 리소스 연동 기능을 제공합니다. ([Home][1])
+### 9-1. Spring Framework는 `JndiObjectFactoryBean`/JNDI lookup 같은 Java EE 리소스 연동 기능을 제공합니다. ([Home][1])
 
 ## 10. Login Registry Service
 
@@ -477,7 +494,7 @@ FROM TB_LOGIN_SESSION_CTRL
 WHERE USER_ID = ?
 ```
 
-### 를 대체합니다.
+### 10-1. 를 대체합니다.
 
 ## 11. Login 처리
 
@@ -646,7 +663,7 @@ Filter 제외
 Token 확인
 ```
 
-### 으로 범위를 줄이는 것이 좋습니다.
+### 13-1. 으로 범위를 줄이는 것이 좋습니다.
 
 ## 14. Spring `@Cacheable`을 꼭 써야 하는가?
 
@@ -690,7 +707,7 @@ LoginRegistryService
 Infinispan
 ```
 
-### Application 전체가 Infinispan API에 의존하는 것도 아닙니다.
+### 14-1. Application 전체가 Infinispan API에 의존하는 것도 아닙니다.
 
 ## 15. Spring Cache abstraction을 사용한다면
 
@@ -790,7 +807,7 @@ Local Spring Cache
           O
 ```
 
-### 입니다.
+### 17-1. 입니다.
 
 ## 18. 그런데 Cache만 사용하면 한 가지 문제가 있음
 
@@ -811,7 +828,7 @@ Infinispan Memory
 가 존재하기 때문에 Session persistence 동작 방식에 따라 세션 데이터와 Token cache의 생명주기가 달라질 수 있습니다.
 이 경우 정책을 선택해야 합니다.
 
-#### 방법 A — Cluster 전체 재기동 시 모두 재로그인
+#### 18-1-1. 방법 A — Cluster 전체 재기동 시 모두 재로그인
 
 가장 단순하고 보안적으로 안전합니다.
 
@@ -825,9 +842,9 @@ isValid=false
 재로그인
 ```
 
-### 저는 이 정책을 선호합니다.
+### 18-2. 저는 이 정책을 선호합니다.
 
-#### 방법 B — DB를 Backup Repository로 사용
+#### 18-2-1. 방법 B — DB를 Backup Repository로 사용
 
 더 안정적인 방법입니다.
 
@@ -862,6 +879,7 @@ DB SELECT = 1회
 
 구조:
 
+{% raw %}
 ```mermaid
 flowchart LR
     R["Authenticated Request"] --> F["DuplicateLoginFilter"]
@@ -873,6 +891,7 @@ flowchart LR
     V -->|"일치"| OK["Controller"]
     V -->|"불일치"| X["Session invalidate"]
 ```
+{% endraw %}
 
 Login 시:
 
@@ -987,7 +1006,7 @@ public class LoginRegistryService {
 loginTokenCache.get(userId);
 ```
 
-### 에서 거의 끝납니다.
+### 20-1. 에서 거의 끝납니다.
 
 ## 21. 한 가지 더 고려할 문제: Cluster Split
 
@@ -1037,7 +1056,7 @@ Cache 검증
 30초   DB 재검증
 ```
 
-### 이 방식은 평소 DB 부하를 크게 낮추면서 partition 상황의 stale window를 제한할 수 있습니다.
+### 21-1. 이 방식은 평소 DB 부하를 크게 낮추면서 partition 상황의 stale window를 제한할 수 있습니다.
 
 ## 22. 현재 시스템에서 권장 순위
 
@@ -1051,7 +1070,7 @@ Cache 검증
 | **JBoss Infinispan Replicated Cache** | ★★★★★ |  ★★★★★ | ★★★★★ |        중간 |  **★★★★★** |
 | **Infinispan + DB Fallback**          | ★★★★★ |  ★★★★★ | ★★★★★ |        중간 | **★★★★★+** |
 
-#### 23. 최종 권장
+#### 22-1-1. 최종 권장
 
 현재 구조에서는 **“Request마다 Token을 검증하지 않는다”는 방향으로 최적화하지 않는 것을 권장**합니다.
 대신:
@@ -1078,3 +1097,8 @@ Spring Framework 관점에서도 가장 중요한 사실은:
 > 그리고 현재 서버에는 이미 그 역할을 수행할 **JBoss Infinispan + JGroups HA infrastructure가 존재**하며 JBoss는 애플리케이션 전용 cache-container/cache 생성과 JNDI injection을 공식 지원합니다. ([레드햇 문서][2])
 > 따라서 이 환경에서는 **별도 Redis, Spring Session, Spring Security를 추가하는 것보다 `login-control` 전용 Replicated Infinispan Cache를 추가하고 Spring Service에서 감싸는 방식이 변경 범위와 성능 면에서 가장 적합합니다.**
 > 특히 실운영 기준으로는 **`Replicated Cache(SYNC) + MariaDB fallback`** 조합을 가장 권장합니다. 평상시 인증 Request에서는 DB를 전혀 조회하지 않고, 로그인/로그아웃 또는 cache miss에서만 DB를 사용하기 때문에 현재 커머스 DB/DBCP 부하 증가를 최소화하면서 단일 로그인 기능을 유지할 수 있습니다.
+<details>
+  <summary>참고</summary>  
+  <pre>
+  </pre>
+</details>
