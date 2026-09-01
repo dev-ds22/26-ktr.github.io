@@ -1850,28 +1850,28 @@ Globlas → Globals
 - 로 정리하는 것이 좋지만 코드와 property를 동시에 변경해야 합니다.
 ---
 ## 14. 기존 코드 대비 중요한 추가 개선
-|항목|기존|최종 코드|
-|---|---|---|
-|Controller 외부연계|직접 호출|Service→Client|
-|Connection|요청마다 직접 처리|Pool 재사용|
-|Proxy|`@UseProxy` 가능성|HttpClient 전용|
-|System Property|변경 가능|사용 안 함|
-|Connect Timeout|3초|3초|
-|Read Timeout|약 10초|**5초**|
-|Pool Wait Timeout|없음|2초|
-|Idle Connection|관리 없음|30초 제거|
-|Connection TTL|없음|5분|
-|Retry|불명확|POST 자동 Retry 차단|
-|Redirect|불명확|차단|
-|SSRF|`containsDomain()`|정확한 Host Allowlist|
-|Response resultCode|검증 부족|검증|
-|Response txId|검증 없음|**요청 txId와 비교**|
-|JSON Loop|불필요한 반복|제거|
-|개인정보 Log|평문 CI/전화/성명|**전부 제거**|
-|Charset|Default Charset 혼용|UTF-8|
-|DB Transaction|경계 불명확|외부연계 후 DB Transaction|
-|Connection close|수동|Framework 반환|
-|Controller 책임|과다|HTTP/View로 제한|
+| 항목                  | 기존                 | 최종 코드                 |
+| ------------------- | ------------------ | --------------------- |
+| Controller 외부연계     | 직접 호출              | Service→Client        |
+| Connection          | 요청마다 직접 처리         | Pool 재사용              |
+| Proxy               | `@UseProxy` 가능성    | HttpClient 전용         |
+| System Property     | 변경 가능              | 사용 안 함                |
+| Connect Timeout     | 3초                 | 3초                    |
+| Read Timeout        | 약 10초              | **5초**                |
+| Pool Wait Timeout   | 없음                 | 2초                    |
+| Idle Connection     | 관리 없음              | 30초 제거                |
+| Connection TTL      | 없음                 | 5분                    |
+| Retry               | 불명확                | POST 자동 Retry 차단      |
+| Redirect            | 불명확                | 차단                    |
+| SSRF                | `containsDomain()` | 정확한 Host Allowlist    |
+| Response resultCode | 검증 부족              | 검증                    |
+| Response txId       | 검증 없음              | **요청 txId와 비교**       |
+| JSON Loop           | 불필요한 반복            | 제거                    |
+| 개인정보 Log            | 평문 CI/전화/성명        | **전부 제거**             |
+| Charset             | Default Charset 혼용 | UTF-8                 |
+| DB Transaction      | 경계 불명확             | 외부연계 후 DB Transaction |
+| Connection close    | 수동                 | Framework 반환          |
+| Controller 책임       | 과다                 | HTTP/View로 제한         |
 
 특히 공식 규격상 결과조회 응답에도 `resultCode`, `txId`가 존재하므로 단순히 HTTP 200만 확인하고 개인정보를 사용하는 것보다 **결과 `resultCode`와 요청/응답 `txId`를 모두 검증한 후 복호화하는 구조**가 안전합니다. 
 ## 최종 적용 시 확인할 3가지
